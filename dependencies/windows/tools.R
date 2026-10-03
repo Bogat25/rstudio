@@ -264,6 +264,8 @@ initialize <- function() {
    # Make sure perl is available
    # try to find a perl installation directory
    perlCandidates <- c(
+      dirname(Sys.which("perl")),
+      "C:/Program Files/Git/usr/bin",
       "C:/Strawberry/perl/bin",
       "C:/Perl64/bin",
       "C:/Perl/bin"

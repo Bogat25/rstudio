@@ -74,7 +74,7 @@ if (file.exists(soci_core_lib)) {
 # remove Rtools from the path, as it can confuse cmake and cause it
 # to find standard library headers in the wrong location
 path <- strsplit(Sys.getenv("PATH"), ";", fixed = TRUE)[[1L]]
-path <- grep("C:\\\\(?:rtools|rbuildtools)", path, value = TRUE, invert = TRUE, ignore.case = TRUE)
+path <- grep("[A-Za-z]:\\\\(?:rtools|rbuildtools)", path, value = TRUE, invert = TRUE, ignore.case = TRUE)
 Sys.setenv(PATH = paste(path, collapse = ";"))
 
 

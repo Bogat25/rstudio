@@ -1,6 +1,6 @@
 @echo off
 
-call %~dp0\..\..\..\dependencies\tools\rstudio-tools.cmd
+call "%~dp0\..\..\..\dependencies\tools\rstudio-tools.cmd"
 
 
 pushd "%_VCTOOLSDIR%"

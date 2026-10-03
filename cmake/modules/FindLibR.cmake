@@ -173,9 +173,13 @@ if(WIN32)
       "${LIBR_HOME}/bin"
    )
 
-   # Generate .lib files from DLLs
+   # Generate .lib files from DLLs in build tree to avoid requiring write permissions in R directory
+   set(LIBR_IMPORT_LIB_DIR "${CMAKE_CURRENT_BINARY_DIR}/libr-import-libs")
+   file(MAKE_DIRECTORY "${LIBR_IMPORT_LIB_DIR}")
+   list(PREPEND _LIBR_LIBRARY_HINTS "${LIBR_IMPORT_LIB_DIR}")
+
    execute_process(
-      COMMAND "${LIBR_HOME}/bin/${LIBR_ARCH}/Rscript.exe" "dll2lib.R" "${CMAKE_C_COMPILER}"
+      COMMAND "${LIBR_HOME}/bin/${LIBR_ARCH}/Rscript.exe" "dll2lib.R" "${CMAKE_C_COMPILER}" "${LIBR_IMPORT_LIB_DIR}"
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tools"
       OUTPUT_VARIABLE _DLL2LIB_STDOUT
       ERROR_VARIABLE _DLL2LIB_STDERR

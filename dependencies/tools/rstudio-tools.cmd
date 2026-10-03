@@ -532,7 +532,7 @@ if not defined _VSINSTALL (
 
 set "_VCTOOLSDIR=%_VSINSTALL%\Common7\Tools"
 set "_VCBUILDDIR=%_VSINSTALL%\VC\Auxiliary\Build"
-set "PATH=%_VCTOOLSDIR%;%_VCBUILDDIR%;%PATH%"
+set "PATH=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer;%_VCTOOLSDIR%;%_VCBUILDDIR%;%PATH%"
 where /Q VsDevCmd.bat
 if %ERRORLEVEL% neq 0 (
   echo ^^!^^! ERROR: Could not find Visual Studio build tools.
