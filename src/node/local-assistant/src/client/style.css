@@ -1,0 +1,3 @@
+html, body { height: 100%; margin: 0; }
+body { font: 14px "Segoe UI", sans-serif; color: var(--rstudio-editor-color, #202020); background: var(--rstudio-editor-background, #fff); }
+#status { padding: 10px; border-bottom: 1px solid #8885; }

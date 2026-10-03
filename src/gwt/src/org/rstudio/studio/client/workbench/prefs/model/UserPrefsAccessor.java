@@ -4278,17 +4278,20 @@ public class UserPrefsAccessor extends Prefs
          _constants.chatProviderDescription(), 
          new String[] {
             CHAT_PROVIDER_NONE,
-            CHAT_PROVIDER_POSIT
+            CHAT_PROVIDER_POSIT,
+            CHAT_PROVIDER_LOCAL
          },
-         "posit",
+         "local",
          new String[] {
             _constants.chatProviderEnum_none(),
-            _constants.chatProviderEnum_posit()
+            _constants.chatProviderEnum_posit(),
+            _constants.chatProviderEnum_local()
          });
    }
 
    public final static String CHAT_PROVIDER_NONE = "none";
    public final static String CHAT_PROVIDER_POSIT = "posit";
+   public final static String CHAT_PROVIDER_LOCAL = "local";
 
    /**
     * Control when code suggestions are displayed in the editor.

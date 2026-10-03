@@ -161,6 +161,23 @@ public class PaiUtil
    }
 
    /**
+    * Returns true if local offline model is the configured chat provider, checking:
+    * 1. Project-level chat provider setting (if set and not "default")
+    * 2. Global user preference
+    *
+    * @return true if local model is the effective chat provider, false otherwise
+    */
+   public boolean isChatProviderLocal()
+   {
+      return getConfiguredChatProvider().equals(UserPrefsAccessor.CHAT_PROVIDER_LOCAL);
+   }
+
+   public boolean isChatEnabled()
+   {
+      return isChatProviderLocal() || (isChatProviderPosit() && isPositAssistantEnabled());
+   }
+
+   /**
     * Returns the configured chat provider, checking:
     * 1. Project-level chat provider setting (if set and not "default")
     * 2. Global user preference

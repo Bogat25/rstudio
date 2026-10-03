@@ -468,6 +468,7 @@ namespace prefs {
 #define kChatProvider "chat_provider"
 #define kChatProviderNone "none"
 #define kChatProviderPosit "posit"
+#define kChatProviderLocal "local"
 #define kAssistantCompletionsTrigger "assistant_completions_trigger"
 #define kAssistantCompletionsTriggerAuto "auto"
 #define kAssistantCompletionsTriggerManual "manual"

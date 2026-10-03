@@ -115,6 +115,9 @@ core::Error handleAIChatRequest(const core::http::Request& request,
  */
 void setChatBackendPort(int port);
 
+// A local backend serves its bundled client. Empty restores Posit resolution.
+void setLocalAssistantPath(const core::FilePath& path);
+
 /**
  * Set the chat backend auth token.
  *

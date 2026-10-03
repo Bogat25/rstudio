@@ -68,6 +68,9 @@ std::atomic<int> s_chatBackendPort{kChatBackendPortNone};
 std::mutex s_authTokenMutex;
 std::string s_chatBackendAuthToken;
 
+std::mutex s_localPathMutex;
+FilePath s_localAssistantPath;
+
 /**
  * The installation to serve client assets from.
  *
@@ -79,6 +82,9 @@ std::string s_chatBackendAuthToken;
  */
 FilePath servedInstallationPath()
 {
+   std::lock_guard<std::mutex> lock(s_localPathMutex);
+   if (!s_localAssistantPath.isEmpty())
+      return verifyInstallDir(s_localAssistantPath) ? s_localAssistantPath : FilePath();
    return locatePositAssistantInstallation();
 }
 
@@ -339,6 +345,12 @@ std::string buildCspHeader(const FilePath& positAiPath)
 }
 
 } // anonymous namespace
+
+void setLocalAssistantPath(const FilePath& path)
+{
+   std::lock_guard<std::mutex> lock(s_localPathMutex);
+   s_localAssistantPath = path;
+}
 
 std::string getContentType(const std::string& extension)
 {

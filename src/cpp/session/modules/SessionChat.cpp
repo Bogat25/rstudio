@@ -26,6 +26,7 @@
 #include "chat/ChatSlots.hpp"
 #include "chat/ChatStaticFiles.hpp"
 #include "chat/ChatUpdateThrottle.hpp"
+#include "chat/ChatLocal.hpp"
 
 #ifndef _WIN32
 # include <cerrno>
@@ -55,6 +56,7 @@
 #include <shared_core/Memory.hpp>
 
 #include <core/AnsiEscapes.hpp>
+#include <core/Base64.hpp>
 #include <core/Exec.hpp>
 #include <core/FileInfo.hpp>
 #include <core/FileSerializer.hpp>
@@ -76,6 +78,7 @@
 #include <r/session/RConsoleActions.hpp>
 #include <r/session/RConsoleHistory.hpp>
 #include <r/session/REventLoop.hpp>
+#include <r/session/RGraphics.hpp>
 
 #include <session/SessionConsoleOutput.hpp>
 #include <session/SessionModuleContext.hpp>
@@ -110,6 +113,7 @@ namespace {
 // Process management
 // ============================================================================
 PidType s_chatBackendPid = -1;
+std::string s_chatBackendProvider;
 int s_chatBackendPort = constants::kChatBackendPortNone;
 int s_chatBackendRestartCount = 0;
 boost::shared_ptr<core::system::ProcessOperations> s_chatBackendOps;
@@ -253,6 +257,24 @@ std::string getConfiguredChatProvider()
 bool isChatProviderPosit()
 {
    return getConfiguredChatProvider() == kChatProviderPosit;
+}
+
+bool isChatProviderLocal()
+{
+   return getConfiguredChatProvider() == kChatProviderLocal;
+}
+
+FilePath localAssistantInstallation()
+{
+   FilePath installed = options().resourcePath().completeChildPath("bin/local-assistant");
+   if (chat::installation::verifyInstallDir(installed))
+      return installed;
+#ifdef RSTUDIO_LOCAL_ASSISTANT_SOURCE
+   FilePath development(RSTUDIO_LOCAL_ASSISTANT_SOURCE);
+   if (chat::installation::verifyInstallDir(development))
+      return development;
+#endif
+   return FilePath();
 }
 
 // Returns true if the user wants Posit Assistant for either chat or completions
@@ -749,6 +771,8 @@ std::map<std::string, NotificationHandler> s_notificationHandlers;
 // Forward Declarations
 // ============================================================================
 Error startChatBackend(bool resumeConversation = false);
+Error chatStopBackend(const json::JsonRpcRequest& request,
+                      json::JsonRpcResponse* pResponse);
 
 // ============================================================================
 // JSON-RPC Notification Handling
@@ -761,6 +785,9 @@ void registerNotificationHandler(const std::string& method, NotificationHandler 
 
 void handleNotification(const std::string& method, const json::Object& params)
 {
+   if (s_chatBackendProvider == kChatProviderLocal &&
+       method != "logger/log" && method != "chat/setBusyStatus")
+      return;
    auto it = s_notificationHandlers.find(method);
    if (it != s_notificationHandlers.end())
    {
@@ -3354,7 +3381,8 @@ void handleGetProtocolVersion(core::system::ProcessOperations& ops,
         clientVersion.empty() ? "unknown" : clientVersion);
 
    // Store the client version for later retrieval via chat_get_version RPC
-   s_positAssistantVersion = clientVersion.empty() ? "unknown" : clientVersion;
+   if (s_chatBackendProvider != kChatProviderLocal)
+      s_positAssistantVersion = clientVersion.empty() ? "unknown" : clientVersion;
 
    // Read optional capabilities from the peer
    json::Array peerCaps;
@@ -3385,8 +3413,9 @@ void handleGetProtocolVersion(core::system::ProcessOperations& ops,
 
    // Dropping ui/checkForUpdates in managed mode makes Posit Assistant hide its
    // own update entry, through the capability negotiation that already exists.
-   std::vector<std::string> caps =
-      chat_constants::negotiatedCapabilities(isInstallationManaged());
+   std::vector<std::string> caps = s_chatBackendProvider == kChatProviderLocal
+      ? local::capabilities()
+      : chat_constants::negotiatedCapabilities(isInstallationManaged());
    json::Array capsArray;
    for (const std::string& cap : caps)
    {
@@ -3431,12 +3460,85 @@ void handleGetConsoleContent(core::system::ProcessOperations& ops,
    sendJsonRpcResponse(ops, requestId, result);
 }
 
+void handleGetCurrentScript(core::system::ProcessOperations& ops,
+                            const json::Value& requestId)
+{
+   auto doc = boost::make_shared<source_database::SourceDocument>();
+   Error error = source_database::get(s_focusedDocumentId, doc);
+   if (s_focusedDocumentId.empty() || error)
+   {
+      sendJsonRpcError(ops, requestId, kJsonRpcServerError, "No script is open.");
+      return;
+   }
+   json::Object result;
+   result["content"] = doc->contents();
+   result["name"] = doc->isUntitled() ? doc->getProperty("tempName") : doc->path();
+   sendJsonRpcResponse(ops, requestId, result);
+}
+
+void handleGetCurrentPlot(core::system::ProcessOperations& ops,
+                          const json::Value& requestId)
+{
+   // Backend callbacks require the main thread, as does R's graphics device.
+   using namespace r::session::graphics;
+   if (display().plotCount() == 0)
+   {
+      sendJsonRpcError(ops, requestId, kJsonRpcServerError, "No plot is available.");
+      return;
+   }
+   int width = std::max(100, device::getWidth());
+   int height = std::max(100, device::getHeight());
+   double scale = std::min(1.0, 1600.0 / std::max(width, height));
+   width = static_cast<int>(width * scale);
+   height = static_cast<int>(height * scale);
+   FilePath file = module_context::tempFile("local-assistant-plot", "png");
+   Error error = display().savePlotAsImage(file, "png", width, height, false);
+   std::string bytes;
+   if (!error)
+      error = core::readStringFromFile(file, &bytes);
+   file.removeIfExists();
+   if (error)
+   {
+      sendJsonRpcError(ops, requestId, kJsonRpcServerError, error.getMessage());
+      return;
+   }
+   std::string encoded;
+   error = core::base64::encode(bytes, &encoded);
+   if (error)
+   {
+      sendJsonRpcError(ops, requestId, kJsonRpcServerError, error.getMessage());
+      return;
+   }
+   json::Object result;
+   result["url"] = "data:image/png;base64," + encoded;
+   result["name"] = "Current plot.png";
+   result["width"] = width;
+   result["height"] = height;
+   sendJsonRpcResponse(ops, requestId, result);
+}
+
 void handleRequest(core::system::ProcessOperations& ops,
                    const std::string& method,
                    const json::Value& requestId,
                    const json::Object& params)
 {
-   if (method == "runtime/getActiveSession")
+   // Use the running process's identity: a preference change must not grant
+   // a still-running local backend the other provider's permissions.
+   if (s_chatBackendProvider == kChatProviderLocal && !local::permitsRequest(method))
+   {
+      sendJsonRpcError(ops, requestId, kJsonRpcMethodNotFound,
+                      "The local assistant cannot execute code or change files.");
+      return;
+   }
+   if (method == "workspace/getCurrentScript" && s_chatBackendProvider == kChatProviderLocal)
+   {
+      handleGetCurrentScript(ops, requestId);
+   }
+   else if (method == "ui/getCurrentPlot" && s_chatBackendProvider == kChatProviderLocal)
+   {
+      handleGetCurrentPlot(ops, requestId);
+   }
+   else if (method == "runtime/getActiveSession")
    {
       handleGetActiveSession(ops, requestId);
    }
@@ -5091,16 +5193,31 @@ std::string installationNotFoundMessage()
 
 Error startChatBackend(bool resumeConversation)
 {
+   const std::string provider = getConfiguredChatProvider();
+   if (provider != kChatProviderLocal && provider != kChatProviderPosit)
+      return systemError(boost::system::errc::operation_not_permitted,
+                         "No chat provider is selected.", ERROR_LOCATION);
+   if (provider == kChatProviderPosit && !isPositAssistantEnabledByAdmin())
+      return systemError(boost::system::errc::operation_not_permitted, ERROR_LOCATION);
+   if (s_chatBackendPid != -1 && s_chatBackendProvider != provider)
+   {
+      json::JsonRpcResponse response;
+      Error error = chatStopBackend(json::JsonRpcRequest(), &response);
+      if (error)
+         return error;
+   }
    // Check if already running
    if (s_chatBackendPid != -1)
       return Success();
 
    // Locate installation
-   FilePath positAiPath = locatePositAssistantInstallation();
+   FilePath positAiPath = isChatProviderLocal()
+      ? localAssistantInstallation() : locatePositAssistantInstallation();
    if (positAiPath.isEmpty())
    {
       return systemError(boost::system::errc::no_such_file_or_directory,
-                        installationNotFoundMessage(),
+                        isChatProviderLocal() ? "The bundled local assistant is missing. Rebuild or reinstall RStudio."
+                                              : installationNotFoundMessage(),
                         ERROR_LOCATION);
    }
 
@@ -5151,7 +5268,8 @@ Error startChatBackend(bool resumeConversation)
 
    // RStudio's own state (manifest-check.json, version slots) lives in pai/.
    // The assistant keeps its storage and settings under ~/.posit/assistant.
-   error = positAiStorageDir().ensureDirectory();
+   FilePath dataPath = core::system::xdg::userDataDir().completeChildPath("local-assistant");
+   error = (isChatProviderLocal() ? dataPath : positAiStorageDir()).ensureDirectory();
    if (error)
       return error;
 
@@ -5188,6 +5306,15 @@ Error startChatBackend(bool resumeConversation)
    core::system::Options environment;
    core::system::environment(&environment);
 
+   if (isChatProviderLocal())
+   {
+      core::system::setenv(&environment, "RSTUDIO_LOCAL_ASSISTANT_DATA", dataPath.getAbsolutePath());
+      core::system::setenv(&environment, "RSTUDIO_LOCAL_ASSISTANT_RESOURCES", positAiPath.getAbsolutePath());
+      if (projects::projectContext().hasProject())
+         core::system::setenv(&environment, "RSTUDIO_LOCAL_ASSISTANT_PROJECT",
+                             projects::projectContext().directory().getAbsolutePath());
+   }
+
    // Set NODE_EXTRA_CA_CERTS if a custom certificates file is provided.
    std::string certificatesFile =
       session::options().positAssistantSslCertificatesFile();
@@ -5213,6 +5340,7 @@ Error startChatBackend(bool resumeConversation)
 #endif
 
    uint64_t generation = ++s_chatBackendGeneration;
+   s_chatBackendProvider = provider;
 
    // A stale flag from a previous unreaped generation must not classify a
    // later crash of this backend as an expected shutdown.
@@ -5277,6 +5405,7 @@ Error startChatBackend(bool resumeConversation)
    // from the same resolved installation the backend was just launched from.
 
    // Share the port with the static file handler for CSP connect-src
+   staticfiles::setLocalAssistantPath(isChatProviderLocal() ? positAiPath : FilePath());
    staticfiles::setChatBackendPort(s_chatBackendPort);
 
    // In server mode the handler delivers this to the PA client as an
@@ -5452,11 +5581,13 @@ Error chatGetBackendStatus(const json::JsonRpcRequest& request,
 {
    json::Object result;
 
-   FilePath installation = locatePositAssistantInstallation();
+   FilePath installation = isChatProviderLocal()
+      ? localAssistantInstallation() : locatePositAssistantInstallation();
    if (installation.isEmpty())
    {
       result["status"] = "not_installed";
-      result["error"] = "Posit Assistant not installed.";
+      result["error"] = isChatProviderLocal() ? "The bundled local assistant is missing."
+                                             : "Posit Assistant not installed.";
    }
    else if (s_chatBackendPid == -1)
    {

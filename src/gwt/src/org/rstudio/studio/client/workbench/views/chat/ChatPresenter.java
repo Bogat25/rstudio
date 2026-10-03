@@ -355,8 +355,8 @@ public class ChatPresenter extends BasePresenter
                   return;
                }
 
-               // Don't poll for backend if Posit Assistant isn't selected as chat provider
-               if (!paiUtil_.isChatProviderPosit())
+               // Don't poll for backend if no chat provider is selected
+               if (paiUtil_.isChatProviderNone())
                {
                   display_.setStatus(Display.Status.ASSISTANT_NOT_SELECTED);
                   return;
@@ -1083,6 +1083,28 @@ public class ChatPresenter extends BasePresenter
          initializing_ = true;
          checkForUpdates();
       }
+      else if (paiUtil_.isChatProviderLocal())
+      {
+         // Prevent concurrent initialization
+         if (initializing_)
+         {
+            return;
+         }
+
+         // Preference handlers run before the enclosing preferences dialog (or
+         // automation bridge) persists its values. Start only after rsession
+         // sees the provider; a direct start here races with that write.
+         initializing_ = true;
+         prefs_.writeUserPrefs(completed ->
+         {
+            if (!paiUtil_.isChatProviderLocal())
+               return;
+            if (completed)
+               startBackend();
+            else
+               showErrorMessage("Unable to save the local assistant preference.");
+         });
+      }
       else
       {
          // If popped out, close the satellite first
@@ -1095,7 +1117,7 @@ public class ChatPresenter extends BasePresenter
             display_.hidePoppedOutPlaceholder();
          }
 
-         // Posit Assistant is not the effective chat provider, stop backend and show not-selected message
+         // No chat provider selected, stop backend and show not-selected message
          initializing_ = false;  // Cancel any ongoing initialization
          stopBackend();
          display_.hideReadlineNotification();
@@ -1107,11 +1129,10 @@ public class ChatPresenter extends BasePresenter
    /**
     * Initialize the Chat pane by checking for updates and starting the backend.
     *
-    * This method initiates an async update check. Once the check completes
-    * (whether successful or failed), the backend will be started automatically
-    * via the checkForUpdates() callback.
+    * This method initiates an async update check for Posit Assistant, or directly
+    * starts the backend for the local assistant.
     *
-    * Flow: initializeChat() -> checkForUpdates() -> startBackend() -> pollForBackendUrl() -> loadChatUI()
+    * Flow: initializeChat() -> [checkForUpdates() ->] startBackend() -> pollForBackendUrl() -> loadChatUI()
     */
    public void initializeChat()
    {
@@ -1121,8 +1142,8 @@ public class ChatPresenter extends BasePresenter
          return;
       }
 
-      // Check if Posit Assistant is selected as chat provider before initializing
-      if (!paiUtil_.isChatProviderPosit())
+      // Check if chat is enabled before initializing
+      if (paiUtil_.isChatProviderNone())
       {
          cancelPopOut();
          display_.setStatus(Display.Status.ASSISTANT_NOT_SELECTED);
@@ -1130,14 +1151,21 @@ public class ChatPresenter extends BasePresenter
       }
 
       initializing_ = true;
-      checkForUpdates();
+      if (paiUtil_.isChatProviderLocal())
+      {
+         startBackend();
+      }
+      else
+      {
+         checkForUpdates();
+      }
    }
 
    private void startBackend()
    {
       // Re-check preference before starting (guards against provider change
       // during the async update check)
-      if (!paiUtil_.isChatProviderPosit())
+      if (paiUtil_.isChatProviderNone())
       {
          initializing_ = false;
          cancelPopOut();
@@ -1185,6 +1213,11 @@ public class ChatPresenter extends BasePresenter
 
    private void checkForUpdates(boolean forceRecheck)
    {
+      if (!paiUtil_.isChatProviderPosit())
+      {
+         startBackend();
+         return;
+      }
       installManager_.checkForUpdates(forceRecheck, new PositAiInstallManager.UpdateCheckCallback()
       {
          @Override
@@ -1497,7 +1530,7 @@ public class ChatPresenter extends BasePresenter
    private void loadChatUI(String wsUrl, String authToken, boolean resumeChat)
    {
       // Re-check preference before loading (guards against preference change during polling)
-      if (!paiUtil_.isChatProviderPosit())
+      if (paiUtil_.isChatProviderNone())
       {
          initializing_ = false;
          cancelPopOut();

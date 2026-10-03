@@ -1910,9 +1910,9 @@
         },
         "chat_provider": {
             "type": "string",
-            "enum": ["none", "posit"],
-            "enumReadable": ["(None)", "Posit Assistant"],
-            "default": "posit",
+            "enum": ["none", "posit", "local"],
+            "enumReadable": ["(None)", "Posit Assistant", "Local model (offline)"],
+            "default": "local",
             "title": "Chat Provider",
             "description": "Select which AI assistant to use for chat functionality."
         },

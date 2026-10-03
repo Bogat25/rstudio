@@ -577,6 +577,7 @@ public class PaneManager
          @Override
          public void onUserPrefsChanged(UserPrefsChangedEvent e)
          {
+            refreshChatTabs();
             if (!userPrefs_.showPanelFocusRectangle().getValue())
             {
                clearFocusIndicator();
@@ -616,11 +617,11 @@ public class PaneManager
       });
 
       // Re-evaluate chat command visibility when the chat provider changes
-      userPrefs.chatProvider().addValueChangeHandler(event -> manageChatCommands());
+      chatTabsEnabled_ = paiUtil_.isChatEnabled();
       eventBus.addHandler(ProjectOptionsChangedEvent.TYPE, event ->
       {
          paiUtil_.updateProjectOptions(event.getData().getAssistantOptions());
-         manageChatCommands();
+         refreshChatTabs();
       });
 
       manageLayoutCommands();
@@ -2138,7 +2139,7 @@ public class PaneManager
          for (int j = 0; j < tabNames.length(); j++)
          {
             Tab tab = Enum.valueOf(Tab.class, tabNames.get(j));
-            if (tab == Tab.Chat && !paiUtil_.isPositAssistantEnabled())
+            if (tab == Tab.Chat && !paiUtil_.isChatEnabled())
                continue;
             tabList.add(tab);
          }
@@ -2219,7 +2220,7 @@ public class PaneManager
       tabs.add(presentation2Tab_);
       tabs.add(environmentTab_);
       tabs.add(viewerTab_);
-      if (paiUtil_.isPositAssistantEnabled())
+      if (paiUtil_.isChatEnabled())
          tabs.add(chatTab_);
       tabs.add(connectionsTab_);
       tabs.add(jobsTab_);
@@ -2231,6 +2232,8 @@ public class PaneManager
    {
       lastSelectedTab_ = tab;
       WorkbenchTabPanel panel = getOwnerTabPanel(tab);
+      if (panel == null)
+         return;
       LogicalWindow parent = panel.getParentWindow();
 
       // If the tab belongs to the hidden tabset, add it to one being displayed
@@ -3186,17 +3189,53 @@ public class PaneManager
       commands_.focusSidebarSeparator().setEnabled(isSidebarVisible);
    }
 
+   private void refreshChatTabs()
+   {
+      boolean enabled = paiUtil_.isChatEnabled();
+      if (enabled != chatTabsEnabled_)
+      {
+         chatTabsEnabled_ = enabled;
+         PaneConfig config = getCurrentConfig();
+         // The layout preference retains Chat's position while the provider is
+         // off. Rebuild its tab membership when switching providers at runtime.
+         tabToPanel_.remove(Tab.Chat);
+         tabToIndex_.remove(Tab.Chat);
+         tabs1_ = tabNamesToTabs(config.getTabSet1());
+         tabs2_ = tabNamesToTabs(config.getTabSet2());
+         hiddenTabs_ = tabNamesToTabs(config.getHiddenTabSet());
+         setWindowStateOnTabChange(panesByName_.get(UserPrefsAccessor.Panes.QUADRANTS_TABSET1),
+                                  tabSet1TabPanel_, tabs1_);
+         setWindowStateOnTabChange(panesByName_.get(UserPrefsAccessor.Panes.QUADRANTS_TABSET2),
+                                  tabSet2TabPanel_, tabs2_);
+         populateTabPanel(tabs1_, tabSet1TabPanel_, tabSet1MinPanel_);
+         populateTabPanel(tabs2_, tabSet2TabPanel_, tabSet2MinPanel_);
+         populateTabPanel(hiddenTabs_, hiddenTabSetTabPanel_, hiddenTabSetMinPanel_);
+         if (sidebar_ != null)
+            refreshSidebar();
+         else
+         {
+            clearSidebarCache();
+            Triad<LogicalWindow, WorkbenchTabPanel, MinimizedModuleTabLayoutPanel> sidebar =
+                  createTabSet(UserPrefsAccessor.Panes.QUADRANTS_SIDEBAR,
+                               tabNamesToTabs(config.getSidebar()));
+            sidebar.first.transitionToState(WindowState.HIDE);
+            panesByName_.put(UserPrefsAccessor.Panes.QUADRANTS_SIDEBAR, sidebar.first);
+         }
+      }
+      manageLayoutCommands();
+      manageChatCommands();
+   }
+
    private void manageChatCommands()
    {
-      boolean paiEnabled = paiUtil_.isPositAssistantEnabled();
+      boolean paiEnabled = paiUtil_.isChatEnabled();
       boolean showPaiUi = paiEnabled && !isTabHidden(Tab.Chat);
       commands_.activateChat().setVisible(showPaiUi);
       commands_.layoutZoomChat().setVisible(showPaiUi);
       commands_.assistantPaneToggle().setVisible(
-            showPaiUi && paiUtil_.isChatProviderPosit());
+            showPaiUi && !paiUtil_.isChatProviderNone());
 
-      // The chat window commands only apply to Posit Assistant; hide them when
-      // it is unavailable (their enabled state is managed by ChatPresenter).
+      // Both providers share the pane and satellite window.
       commands_.popOutChat().setVisible(paiEnabled);
       commands_.returnChatToMain().setVisible(paiEnabled);
 
@@ -3204,7 +3243,7 @@ public class PaneManager
       // backend refuses it, and any leftover user-level copy is inert.
       boolean installEnabled = paiUtil_.isPositAssistantInstallationEnabled();
       commands_.checkForPositAssistantUpdates().setVisible(
-            paiEnabled && installEnabled);
+            paiUtil_.isPositAssistantEnabled() && installEnabled && paiUtil_.isPositAssistantWanted());
    }
 
    private boolean isTabHidden(Tab tab)
@@ -3237,7 +3276,7 @@ public class PaneManager
       commands.add(commands_.layoutZoomViewer());
       commands.add(commands_.layoutZoomConnections());
       commands.add(commands_.layoutZoomPresentation2());
-      if (paiUtil_.isPositAssistantEnabled())
+      if (paiUtil_.isChatEnabled())
          commands.add(commands_.layoutZoomChat());
 
       return commands;
@@ -3325,6 +3364,7 @@ public class PaneManager
    private WorkbenchTab sidebarSelectedTab_;
    private Widget sidebar_;
    private PaneConfig previousPaneConfig_;
+   private boolean chatTabsEnabled_;
 
    // Zoom-related members ----
    private Tab lastSelectedTab_ = null;

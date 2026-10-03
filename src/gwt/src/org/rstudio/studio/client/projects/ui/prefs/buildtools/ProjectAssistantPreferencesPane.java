@@ -194,23 +194,27 @@ public class ProjectAssistantPreferencesPane extends ProjectPreferencesPane
          chatProviderLabels = new String[] {
                constants_.defaultInParentheses(),
                constants_.none(),
-               prefsConstants_.chatProviderEnum_posit()
+               prefsConstants_.chatProviderEnum_posit(),
+               prefsConstants_.chatProviderEnum_local()
          };
          chatProviderValues = new String[] {
                CHAT_PROVIDER_DEFAULT,
                UserPrefsAccessor.CHAT_PROVIDER_NONE,
-               UserPrefsAccessor.CHAT_PROVIDER_POSIT
+               UserPrefsAccessor.CHAT_PROVIDER_POSIT,
+               UserPrefsAccessor.CHAT_PROVIDER_LOCAL
          };
       }
       else
       {
          chatProviderLabels = new String[] {
                constants_.defaultInParentheses(),
-               constants_.none()
+               constants_.none(),
+               prefsConstants_.chatProviderEnum_local()
          };
          chatProviderValues = new String[] {
                CHAT_PROVIDER_DEFAULT,
-               UserPrefsAccessor.CHAT_PROVIDER_NONE
+               UserPrefsAccessor.CHAT_PROVIDER_NONE,
+               UserPrefsAccessor.CHAT_PROVIDER_LOCAL
          };
       }
       selChatProvider_ = new SelectWidget(
@@ -460,6 +464,8 @@ public class ProjectAssistantPreferencesPane extends ProjectPreferencesPane
       String globalChatProviderName;
       if (globalChatProvider.equals(UserPrefsAccessor.CHAT_PROVIDER_POSIT))
          globalChatProviderName = prefsConstants_.chatProviderEnum_posit();
+      else if (globalChatProvider.equals(UserPrefsAccessor.CHAT_PROVIDER_LOCAL))
+         globalChatProviderName = prefsConstants_.chatProviderEnum_local();
       else
          globalChatProviderName = constants_.none();
 
@@ -668,6 +674,8 @@ public class ProjectAssistantPreferencesPane extends ProjectPreferencesPane
    {
       if (value.equals(UserPrefsAccessor.CHAT_PROVIDER_POSIT))
          return prefsConstants_.chatProviderEnum_posit();
+      if (value.equals(UserPrefsAccessor.CHAT_PROVIDER_LOCAL))
+         return prefsConstants_.chatProviderEnum_local();
       return value;
    }
    

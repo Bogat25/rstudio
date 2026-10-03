@@ -132,6 +132,9 @@ endif()
 # include files
 file(GLOB_RECURSE SESSION_HEADER_FILES CONFIGURE_DEPENDS "*.h*")
 
+# The development backend uses the same package installed beside rsession.
+add_definitions(-DRSTUDIO_LOCAL_ASSISTANT_SOURCE="${CMAKE_CURRENT_SOURCE_DIR}/../../node/local-assistant")
+
 
 # source files
 set(SESSION_SOURCE_FILES

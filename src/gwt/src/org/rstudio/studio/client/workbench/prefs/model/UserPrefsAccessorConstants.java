@@ -2338,6 +2338,8 @@ public interface UserPrefsAccessorConstants extends Constants {
    String chatProviderEnum_none();
    @DefaultStringValue("Posit Assistant")
    String chatProviderEnum_posit();
+   @DefaultStringValue("Local model (offline)")
+   String chatProviderEnum_local();
 
    /**
     * Control when code suggestions are displayed in the editor.
