@@ -580,12 +580,27 @@ FunctionEnd
 ;--------------------------------
 ;Uninstaller Section
 
+Function un.RemoveLocalAssistantModels
+  ; Delete only our default downloaded assets; preserve settings, prompt and notes.
+  ; Run in the shell user's context even for an elevated all-users uninstall.
+  Delete "$LOCALAPPDATA\RStudio\local-assistant\models\Qwen3.5-4B-Q4_K_M.gguf"
+  Delete "$LOCALAPPDATA\RStudio\local-assistant\models\Qwen3.5-4B-Q4_K_M.gguf.part"
+  Delete "$LOCALAPPDATA\RStudio\local-assistant\models\Qwen3.5-4B-mmproj-F16.gguf"
+  Delete "$LOCALAPPDATA\RStudio\local-assistant\models\Qwen3.5-4B-mmproj-F16.gguf.part"
+  RMDir "$LOCALAPPDATA\RStudio\local-assistant\models"
+FunctionEnd
+
 Section "Uninstall"
   ReadRegStr $START_MENU SHCTX \
    "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CPACK_PACKAGE_NAME@" "StartMenu"
   ;MessageBox MB_OK "Start menu is in: $START_MENU"
 
 @CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS@
+
+  ; An upgrade invokes this uninstaller with /uninstall. Keep its cached models.
+  ${If} $RunningFromInstaller = 0
+    !insertmacro UAC_AsUser_Call Function un.RemoveLocalAssistantModels ${UAC_SYNCREGISTERS}
+  ${EndIf}
 
   ;Remove files we installed.
   ;Keep the list of directories here in sync with the File commands above.

@@ -704,6 +704,10 @@ if(UNIX)
 endif()
 
 # install binary
+if(NOT RSTUDIO_SESSION_WIN32 AND NOT RSTUDIO_SESSION_ALTERNATE_ARCH)
+   add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../node/local-assistant"
+                    "${CMAKE_CURRENT_BINARY_DIR}/local-assistant")
+endif()
 install(TARGETS rsession DESTINATION "${RSTUDIO_INSTALL_BIN}")
 if(WIN32)
    # the shared library holding the session code (loaded by the launcher stubs)
