@@ -416,11 +416,13 @@ SEXP rs_rstudioVersion()
    std::string numericVersion(RSTUDIO_VERSION_MAJOR);
    numericVersion.append(".")
       .append(RSTUDIO_VERSION_MINOR).append(".")
-      .append(RSTUDIO_VERSION_PATCH).append(".")
-      .append(boost::regex_replace(
-         std::string(RSTUDIO_VERSION_SUFFIX),
-         boost::regex("[a-zA-Z\\-+]"),
-         ""));
+      .append(RSTUDIO_VERSION_PATCH);
+   std::string buildVersion = boost::regex_replace(
+      std::string(RSTUDIO_VERSION_SUFFIX), boost::regex("[a-zA-Z\\-+]"), "");
+   // Local releases can omit the upstream build number. R's package_version()
+   // rejects the trailing dot that an empty suffix would otherwise produce.
+   if (!buildVersion.empty())
+      numericVersion.append(".").append(buildVersion);
 
    r::sexp::Protect rProtect;
    return r::sexp::create(numericVersion, &rProtect);

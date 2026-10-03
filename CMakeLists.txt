@@ -42,9 +42,12 @@ endif()
 if (NOT RSTUDIO_SESSION_WIN32)
    # dynamically configure SOURCE with the git revision hash
    INSTALL(CODE "
-      execute_process(COMMAND git rev-parse HEAD
-                      WORKING_DIRECTORY \"${CMAKE_CURRENT_SOURCE_DIR}\"
-                      OUTPUT_VARIABLE RSTUDIO_GIT_REVISION_HASH)
+      set(RSTUDIO_GIT_REVISION_HASH \"${RSTUDIO_GIT_REVISION_HASH}\")
+      if(NOT RSTUDIO_GIT_REVISION_HASH)
+         execute_process(COMMAND git rev-parse HEAD
+                         WORKING_DIRECTORY \"${CMAKE_CURRENT_SOURCE_DIR}\"
+                         OUTPUT_VARIABLE RSTUDIO_GIT_REVISION_HASH)
+      endif()
       configure_file (\"${CMAKE_CURRENT_SOURCE_DIR}/SOURCE.in\"
                       \"${CMAKE_CURRENT_BINARY_DIR}/SOURCE\")
    ")

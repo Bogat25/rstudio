@@ -269,6 +269,7 @@ if (WIN32)
       WORKING_DIRECTORY "${ELECTRON_BINARY_DIR}"
       COMMAND ${NPM} install
       COMMAND ${NPM} run install-fuses
+      COMMAND "${CMAKE_COMMAND}" -E touch "${ELECTRON_BINARY_DIR}/out/fuses"
    )
 
 else()
@@ -283,6 +284,7 @@ else()
          "PATH=${MODIFIED_PATH}"
          "MAKEFLAGS="
          ${NPM} run install-fuses
+      COMMAND "${CMAKE_COMMAND}" -E touch "${ELECTRON_BINARY_DIR}/out/fuses"
    )
 
 endif()

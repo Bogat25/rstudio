@@ -1989,12 +1989,11 @@ std::string parsableRStudioVersion()
    version.append(".")
          .append(RSTUDIO_VERSION_MINOR)
          .append(".")
-         .append(RSTUDIO_VERSION_PATCH)
-         .append(".")
-         .append(boost::regex_replace(
-               std::string(RSTUDIO_VERSION_SUFFIX),
-               boost::regex("[a-zA-Z\\-+]"),
-               ""));
+         .append(RSTUDIO_VERSION_PATCH);
+   std::string buildVersion = boost::regex_replace(
+      std::string(RSTUDIO_VERSION_SUFFIX), boost::regex("[a-zA-Z\\-+]"), "");
+   if (!buildVersion.empty())
+      version.append(".").append(buildVersion);
    return version;
 }
 

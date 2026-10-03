@@ -34,6 +34,10 @@ Documentation
 For information on how to use RStudio, see the
 [RStudio User Guide](https://docs.posit.co/ide/user/).
 
+For this fork's Windows build, portable package and per-user Inno Setup installer,
+see [BUILD-WINDOWS.md](BUILD-WINDOWS.md). Start with `.\rstudio doctor`;
+`.\rstudio installer -Version 0.1.0` creates the setup EXE after a full build.
+
 See also the following files included with the distribution:
 
 - COPYING - RStudio license (AGPLv3)

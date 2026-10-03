@@ -124,6 +124,12 @@ retains llama.cpp and LLVM OpenMP notices.
 
 ## Development on this Windows checkout
 
+The repository root now has the same build/portable/Inno Setup workflow as the
+RGui fork. Use `.\rstudio doctor`, `.\rstudio full`, `.\rstudio dev` and
+`.\rstudio installer -Version 0.1.0`. See [BUILD-WINDOWS.md](../../../BUILD-WINDOWS.md)
+for prerequisites, outputs, USB deployment and installer checks. The commands
+below remain useful for working on individual components in the source checkout.
+
 From this directory:
 
 ```powershell
