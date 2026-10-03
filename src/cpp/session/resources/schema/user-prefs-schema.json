@@ -1916,6 +1916,30 @@
             "title": "Chat Provider",
             "description": "Select which AI assistant to use for chat functionality."
         },
+        "local_assistant_model_dir": {
+            "type": "string", "default": "", "title": "Local model folder",
+            "description": "Folder containing the local GGUF model and vision reader. Empty uses the RStudio user data folder."
+        },
+        "local_assistant_context_dir": {
+            "type": "string", "default": "", "title": "Course reference folder",
+            "description": "Empty uses the project's .ai-context folder when present, otherwise the user data context folder."
+        },
+        "local_assistant_threads": {
+            "type": "integer", "default": 0, "minimum": 0, "maximum": 256,
+            "title": "CPU threads (0 = automatic)", "description": "Number of CPU threads used by the local model."
+        },
+        "local_assistant_image_max_tokens": {
+            "type": "integer", "default": 256, "minimum": 64, "maximum": 4096,
+            "title": "Picture token budget", "description": "Maximum vision tokens per attached picture."
+        },
+        "local_assistant_thinking": {
+            "type": "boolean", "default": false, "title": "Enable model thinking",
+            "description": "Enable the model's slower reasoning mode. Thinking text is hidden from the answer."
+        },
+        "local_assistant_keep_history": {
+            "type": "integer", "default": 12, "minimum": 0, "maximum": 100,
+            "title": "Conversation messages sent with each question", "description": "Number of recent conversation messages included as model context."
+        },
         "assistant_completions_trigger": {
             "type": "string",
             "enum": ["auto", "manual"],

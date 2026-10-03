@@ -159,6 +159,8 @@ static bool s_resumeChat = false;
 // ============================================================================
 static std::string s_focusedDocumentId;
 static json::Array s_focusedDocumentSelections;
+static std::map<std::string, json::Value> s_currentScriptRequests;
+static unsigned long s_currentScriptSequence = 0;
 
 // ============================================================================
 // Posit Assistant version tracking for About dialog
@@ -3463,17 +3465,21 @@ void handleGetConsoleContent(core::system::ProcessOperations& ops,
 void handleGetCurrentScript(core::system::ProcessOperations& ops,
                             const json::Value& requestId)
 {
-   auto doc = boost::make_shared<source_database::SourceDocument>();
-   Error error = source_database::get(s_focusedDocumentId, doc);
-   if (s_focusedDocumentId.empty() || error)
+   if (s_currentScriptRequests.size() >= 16)
    {
-      sendJsonRpcError(ops, requestId, kJsonRpcServerError, "No script is open.");
+      sendJsonRpcError(ops, requestId, kJsonRpcServerError, "The editor has not responded. Try again after reopening Chat.");
       return;
    }
-   json::Object result;
-   result["content"] = doc->contents();
-   result["name"] = doc->isUntitled() ? doc->getProperty("tempName") : doc->path();
-   sendJsonRpcResponse(ops, requestId, result);
+   const std::string correlation = std::to_string(++s_currentScriptSequence);
+   s_currentScriptRequests[correlation] = requestId;
+   json::Object data;
+   data["type"] = 3; // GetEditorContextEvent.TYPE_LOCAL_ASSISTANT
+   data["chatRequestId"] = correlation;
+   json::Object eventData;
+   eventData["type"] = "editor_context";
+   eventData["data"] = data;
+   // Read the live buffer asynchronously; no save, R evaluation or UI wait.
+   module_context::enqueClientEvent(ClientEvent(client_events::kEditorCommand, eventData));
 }
 
 void handleGetCurrentPlot(core::system::ProcessOperations& ops,
@@ -3537,6 +3543,17 @@ void handleRequest(core::system::ProcessOperations& ops,
    else if (method == "ui/getCurrentPlot" && s_chatBackendProvider == kChatProviderLocal)
    {
       handleGetCurrentPlot(ops, requestId);
+   }
+   else if (method == "workspace/getLocalSettings" && s_chatBackendProvider == kChatProviderLocal)
+   {
+      json::Object settings;
+      settings["modelDirectory"] = prefs::userPrefs().localAssistantModelDir();
+      settings["contextDirectory"] = prefs::userPrefs().localAssistantContextDir();
+      settings["threads"] = prefs::userPrefs().localAssistantThreads();
+      settings["imageMaxTokens"] = prefs::userPrefs().localAssistantImageMaxTokens();
+      settings["thinking"] = prefs::userPrefs().localAssistantThinking();
+      settings["keepHistory"] = prefs::userPrefs().localAssistantKeepHistory();
+      sendJsonRpcResponse(ops, requestId, settings);
    }
    else if (method == "runtime/getActiveSession")
    {
@@ -5155,6 +5172,7 @@ void onBackendExit(int exitCode, uint64_t generation)
    s_chatBackendPid = -1;
    clearChatBackendPort();
    s_backendOutputBuffer.clear();
+   s_currentScriptRequests.clear();
    s_chatBackendOps.reset();
    s_peerSentCapabilities = false;
    s_peerCapabilities.clear();
@@ -5310,6 +5328,7 @@ Error startChatBackend(bool resumeConversation)
    {
       core::system::setenv(&environment, "RSTUDIO_LOCAL_ASSISTANT_DATA", dataPath.getAbsolutePath());
       core::system::setenv(&environment, "RSTUDIO_LOCAL_ASSISTANT_RESOURCES", positAiPath.getAbsolutePath());
+      core::system::setenv(&environment, "RSTUDIO_LOCAL_ASSISTANT_HOME", options().resourcePath().getAbsolutePath());
       if (projects::projectContext().hasProject())
          core::system::setenv(&environment, "RSTUDIO_LOCAL_ASSISTANT_PROJECT",
                              projects::projectContext().directory().getAbsolutePath());
@@ -5438,6 +5457,29 @@ Error chatDocFocused(const json::JsonRpcRequest& request,
 
    s_focusedDocumentId = documentId;
    s_focusedDocumentSelections = selections;
+   return Success();
+}
+
+Error chatCurrentScript(const json::JsonRpcRequest& request,
+                        json::JsonRpcResponse* pResponse)
+{
+   std::string correlation, content;
+   bool available;
+   Error error = json::readParams(request.params, &correlation, &content, &available);
+   if (error) return error;
+   auto pending = s_currentScriptRequests.find(correlation);
+   if (pending == s_currentScriptRequests.end()) return Success();
+   const json::Value requestId = pending->second;
+   s_currentScriptRequests.erase(pending);
+   if (!s_chatBackendOps || s_chatBackendProvider != kChatProviderLocal) return Success();
+   if (!available)
+      sendJsonRpcError(*s_chatBackendOps, requestId, kJsonRpcServerError, "No script is open.");
+   else
+   {
+      json::Object result;
+      result["content"] = content;
+      sendJsonRpcResponse(*s_chatBackendOps, requestId, result);
+   }
    return Success();
 }
 
@@ -6480,6 +6522,7 @@ Error initialize()
       (bind(registerAsyncRpcMethod, "chat_install_update", chatInstallUpdate))
       (bind(registerRpcMethod, "chat_get_update_status", chatGetUpdateStatus))
       (bind(registerRpcMethod, "chat_doc_focused", chatDocFocused))
+      (bind(registerRpcMethod, "chat_current_script", chatCurrentScript))
       (bind(registerRpcMethod, "chat_notify_ui_loaded", chatNotifyUILoaded))
       (bind(registerUriHandler, "/ai-chat", handleAIChatRequest))
       (bind(sourceModuleRFile, "SessionChat.R"))

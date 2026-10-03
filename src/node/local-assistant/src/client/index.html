@@ -1,4 +1,20 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>R assistant</title><link rel="stylesheet" href="style.css"><script type="module" src="main.js"></script></head>
-<body data-provider="local"><div id="status" role="status">Connecting to the local assistant…</div><main id="transcript" tabindex="0" aria-label="Conversation"></main></body></html>
+<body data-provider="local">
+<div id="status" role="status">Connecting to the local assistant…</div>
+<main id="transcript" tabindex="0" aria-label="Conversation"></main>
+<div id="attachment-bar" hidden><div id="attachments" class="pictures" aria-label="Attached pictures"></div><button id="clear-pictures" type="button">Clear pictures</button></div>
+<label class="sr-only" for="question">Your question</label><textarea id="question" placeholder="Ask about R or statistics. Ctrl+Enter sends." rows="4"></textarea>
+<div id="actions">
+<button id="send" type="button">Send</button><button id="stop" type="button" disabled>Stop</button>
+<button id="copy" type="button" disabled>Copy code</button><button id="to-editor" type="button" disabled>To editor</button>
+<button id="new-chat" type="button">New chat</button>
+<label class="sr-only" for="attach">Attach</label><select id="attach"><option value="">Attach…</option><option value="script">Current script</option><option value="error">Last error from the console</option><option value="console">Recent console output</option><option value="plot">Current plot</option><option value="files">Picture files…</option><option value="paste">Picture from the clipboard</option><option value="remove">Remove pictures</option></select>
+<label class="sr-only" for="edit">Edit</label><select id="edit"><option value="">Edit…</option><option value="copy">Copy selection</option><option value="paste">Paste plain text</option><option value="select-all">Select all question text</option><option value="new-chat">New chat</option><option value="toggle">Toggle Chat (shortcut in View &gt; Panes)</option></select>
+<button id="download" type="button">Download model</button><button id="pause-download" type="button" hidden>Pause download</button>
+</div>
+<input id="picture-files" type="file" accept=".png,.jpg,.jpeg,.bmp,.gif,.tif,.tiff,image/*" multiple hidden>
+<dialog id="viewer" aria-labelledby="picture-title"><div class="viewer-header"><strong id="picture-title"></strong><button id="close-viewer" type="button" aria-label="Close picture">Close</button></div><img id="view-picture" alt="Attached picture"></dialog>
+<dialog id="download-offer"><p id="offer-text"></p><button id="offer-yes" type="button">Yes, download</button><button id="offer-no" type="button">Not now</button></dialog>
+</body></html>

@@ -42,6 +42,8 @@ import org.rstudio.studio.client.workbench.codesearch.CodeSearch;
 import org.rstudio.studio.client.workbench.commands.Commands;
 import org.rstudio.studio.client.workbench.model.SessionInfo;
 import org.rstudio.studio.client.workbench.prefs.model.UserPrefs;
+import org.rstudio.studio.client.workbench.views.chat.PaiUtil;
+import org.rstudio.studio.client.projects.ui.prefs.events.ProjectOptionsChangedEvent;
 import org.rstudio.studio.client.workbench.views.chat.events.ChatPaneActiveEvent;
 
 import com.google.gwt.core.client.GWT;
@@ -58,7 +60,8 @@ public class GlobalToolbar extends Toolbar
                         EventBus eventBus,
                         Provider<CodeSearch> pCodeSearch,
                         UserPrefs userPrefs,
-                        TrustPresenter trustPresenter)
+                        TrustPresenter trustPresenter,
+                        PaiUtil paiUtil)
    {
       super(constants_.mainLabel());
 
@@ -67,6 +70,7 @@ public class GlobalToolbar extends Toolbar
       pCodeSearch_ = pCodeSearch;
       userPrefs_ = userPrefs;
       trustPresenter_ = trustPresenter;
+      paiUtil_ = paiUtil;
       ThemeResources res = ThemeResources.INSTANCE;
       addStyleName(res.themeStyles().globalToolbar());
 
@@ -298,6 +302,11 @@ public class GlobalToolbar extends Toolbar
          // Hide/show when the preference changes
          userPrefs_.assistantToolbarButtonVisible().addValueChangeHandler(event ->
                updateAssistantButtonVisibility());
+         userPrefs_.chatProvider().addValueChangeHandler(event -> updateAssistantButtonVisibility());
+         eventBus_.addHandler(ProjectOptionsChangedEvent.TYPE, event -> {
+            paiUtil_.updateProjectOptions(event.getData().getAssistantOptions());
+            updateAssistantButtonVisibility();
+         });
 
          // Sync initial state: PaneManager may have already set the command
          // invisible before this handler was registered (see #17368)
@@ -384,6 +393,7 @@ public class GlobalToolbar extends Toolbar
       if (assistantButton_ != null)
       {
          boolean visible = commands_.assistantPaneToggle().isVisible() &&
+                           paiUtil_.isChatProviderPosit() &&
                            userPrefs_.assistantToolbarButtonVisible().getValue();
          assistantButton_.setVisible(visible);
          assistantSeparator_.setVisible(visible);
@@ -430,6 +440,7 @@ public class GlobalToolbar extends Toolbar
    private final Provider<CodeSearch> pCodeSearch_;
    private final Widget searchWidget_;
    private final UserPrefs userPrefs_;
+   private final PaiUtil paiUtil_;
    private final FocusContext codeSearchFocusContext_ = new FocusContext();
    private ToolbarButton sidebarToggleButton_;
    private LatchingToolbarButton assistantButton_;

@@ -3013,6 +3013,19 @@ public class Source implements InsertSourceEvent.Handler,
       int type = data.getType();
       String id = data.getDocId();
 
+      if (type == GetEditorContextEvent.TYPE_LOCAL_ASSISTANT)
+      {
+         if (!SourceWindowManager.isMainSourceWindow()) return;
+         Command unavailable = () -> server_.chatCurrentScript(data.getChatRequestId(), "", false,
+                                                               new VoidServerRequestCallback());
+         if (columnManager_.hasActiveEditor())
+            columnManager_.withTarget("", target -> server_.chatCurrentScript(data.getChatRequestId(),
+                  target.getDocDisplay().getCode(), true, new VoidServerRequestCallback()), unavailable);
+         else
+            unavailable.execute();
+         return;
+      }
+
       if (type == GetEditorContextEvent.TYPE_ACTIVE_EDITOR)
       {
          if (consoleEditorHadFocusLast() || !columnManager_.hasActiveEditor())

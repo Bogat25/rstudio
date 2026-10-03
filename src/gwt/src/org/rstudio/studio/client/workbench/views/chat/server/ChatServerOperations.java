@@ -64,4 +64,6 @@ public interface ChatServerOperations
                               ServerRequestCallback<VoidResponse> requestCallback);
 
    public void chatNotifyUILoaded(ServerRequestCallback<VoidResponse> requestCallback);
+   public void chatCurrentScript(String requestId, String content, boolean available,
+                                  ServerRequestCallback<VoidResponse> requestCallback);
 }

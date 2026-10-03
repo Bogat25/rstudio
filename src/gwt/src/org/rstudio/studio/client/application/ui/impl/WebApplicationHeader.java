@@ -41,6 +41,7 @@ import org.rstudio.studio.client.application.events.EventBus;
 import org.rstudio.studio.client.application.events.LogoutRequestedEvent;
 import org.rstudio.studio.client.application.ui.ApplicationHeader;
 import org.rstudio.studio.client.application.ui.GlobalToolbar;
+import org.rstudio.studio.client.workbench.views.chat.PaiUtil;
 import org.rstudio.studio.client.application.ui.ProjectPopupMenu;
 import org.rstudio.studio.client.application.ui.impl.header.HeaderPanel;
 import org.rstudio.studio.client.application.ui.impl.header.MenubarPanel;
@@ -97,7 +98,8 @@ public class WebApplicationHeader extends Composite
                   final Session session,
                   Provider<CodeSearch> pCodeSearch,
                   UserPrefs userPrefs,
-                  TrustPresenter trustPresenter)
+                               TrustPresenter trustPresenter,
+                               PaiUtil paiUtil)
    {
       commands_ = commands;
       eventBus_ = eventBus;
@@ -229,7 +231,7 @@ public class WebApplicationHeader extends Composite
       });
 
       // create toolbar
-      toolbar_ = new GlobalToolbar(commands, eventBus, pCodeSearch, userPrefs, trustPresenter);
+      toolbar_ = new GlobalToolbar(commands, eventBus, pCodeSearch, userPrefs, trustPresenter, paiUtil);
       toolbar_.addStyleName(themeResources.themeStyles().webGlobalToolbar());
       toolbar_.getWrapper().addStyleName(themeResources.themeStyles().webGlobalToolbarWrapper());
 

@@ -1483,9 +1483,11 @@ public interface CmdConstants extends Constants {
     String assistantRequestSuggestionsDesc();
     
     // assistantPaneToggle
-    @DefaultStringValue("Toggle Posit Assistant") // $NON-NLS-1$
+    @DefaultStringValue("Toggle Chat") // $NON-NLS-1$
     String assistantPaneToggleLabel();
-    @DefaultStringValue("Toggle the visibility of the Posit Assistant pane.") // $NON-NLS-1$
+    @DefaultStringValue("Toggle _Chat") // $NON-NLS-1$
+    String assistantPaneToggleMenuLabel();
+    @DefaultStringValue("Toggle the visibility of the Chat pane.") // $NON-NLS-1$
     String assistantPaneToggleDesc();
     
     // sourceNavigateBack

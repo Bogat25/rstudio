@@ -1065,6 +1065,9 @@ public class ChatPane
          else if (event.data === 'open-global-options') {
             self.@org.rstudio.studio.client.workbench.views.chat.ChatPane::handleOpenGlobalOptionsRequest()();
          }
+         else if (event.data === 'toggle-local-assistant') {
+            self.@org.rstudio.studio.client.workbench.views.chat.ChatPane::handleToggleRequest()();
+         }
          else if (event.data === 'bring-chat-to-front') {
             self.@org.rstudio.studio.client.workbench.views.chat.ChatPane::handleBringToFrontRequest()();
          }
@@ -1126,6 +1129,11 @@ public class ChatPane
    private void handleOpenGlobalOptionsRequest()
    {
       commands_.showAssistantOptions().execute();
+   }
+
+   private void handleToggleRequest()
+   {
+      commands_.assistantPaneToggle().execute();
    }
 
    private void handleBringToFrontRequest()

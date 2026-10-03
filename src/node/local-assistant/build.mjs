@@ -13,6 +13,15 @@ await writeFile('dist/csp.json', JSON.stringify({
   'img-src': "'self' data: blob:", 'connect-src': "'self'", 'object-src': "'none'",
   'base-uri': "'none'", 'form-action': "'none'"
 }));
+const licenses = [];
+for (const name of ['ws', 'undici', 'utif', 'pako']) {
+  const files = await readdir(`node_modules/${name}`);
+  const license = files.find(file => /^licen[cs]e(?:\.|$)/i.test(file));
+  if (!license) throw new Error(`Missing third-party license for ${name}.`);
+  const { readFile } = await import('node:fs/promises');
+  licenses.push(`=== ${name} ===\n${await readFile(`node_modules/${name}/${license}`, 'utf8')}`);
+}
+await writeFile('dist/THIRD-PARTY-NOTICES.txt', licenses.join('\n\n'));
 for (const file of await readdir('test')) {
   if (file.endsWith('.test.ts'))
     await build({ entryPoints: [`test/${file}`], bundle: true, platform: 'node',

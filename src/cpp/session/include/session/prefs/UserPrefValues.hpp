@@ -469,6 +469,12 @@ namespace prefs {
 #define kChatProviderNone "none"
 #define kChatProviderPosit "posit"
 #define kChatProviderLocal "local"
+#define kLocalAssistantModelDir "local_assistant_model_dir"
+#define kLocalAssistantContextDir "local_assistant_context_dir"
+#define kLocalAssistantThreads "local_assistant_threads"
+#define kLocalAssistantImageMaxTokens "local_assistant_image_max_tokens"
+#define kLocalAssistantThinking "local_assistant_thinking"
+#define kLocalAssistantKeepHistory "local_assistant_keep_history"
 #define kAssistantCompletionsTrigger "assistant_completions_trigger"
 #define kAssistantCompletionsTriggerAuto "auto"
 #define kAssistantCompletionsTriggerManual "manual"
@@ -2203,6 +2209,42 @@ public:
     */
    std::string chatProvider();
    core::Error setChatProvider(std::string val);
+
+   /**
+    * Folder containing the local GGUF model and vision reader. Empty uses the RStudio user data folder.
+    */
+   std::string localAssistantModelDir();
+   core::Error setLocalAssistantModelDir(std::string val);
+
+   /**
+    * Empty uses the project's .ai-context folder when present, otherwise the user data context folder.
+    */
+   std::string localAssistantContextDir();
+   core::Error setLocalAssistantContextDir(std::string val);
+
+   /**
+    * Number of CPU threads used by the local model.
+    */
+   int localAssistantThreads();
+   core::Error setLocalAssistantThreads(int val);
+
+   /**
+    * Maximum vision tokens per attached picture.
+    */
+   int localAssistantImageMaxTokens();
+   core::Error setLocalAssistantImageMaxTokens(int val);
+
+   /**
+    * Enable the model's slower reasoning mode. Thinking text is hidden from the answer.
+    */
+   bool localAssistantThinking();
+   core::Error setLocalAssistantThinking(bool val);
+
+   /**
+    * Number of recent conversation messages included as model context.
+    */
+   int localAssistantKeepHistory();
+   core::Error setLocalAssistantKeepHistory(int val);
 
    /**
     * Control when code suggestions are displayed in the editor.

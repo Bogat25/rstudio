@@ -45,6 +45,7 @@ import org.rstudio.studio.client.application.model.ApplicationServerOperations;
 import org.rstudio.studio.client.application.model.UpdateCheckResult;
 import org.rstudio.studio.client.application.ui.ApplicationHeader;
 import org.rstudio.studio.client.application.ui.GlobalToolbar;
+import org.rstudio.studio.client.workbench.views.chat.PaiUtil;
 import org.rstudio.studio.client.common.GlobalDisplay;
 import org.rstudio.studio.client.common.debugging.ErrorManager;
 import org.rstudio.studio.client.events.EditEvent;
@@ -99,7 +100,8 @@ public class DesktopApplicationHeader implements ApplicationHeader,
                           ErrorManager errorManager,
                           GlobalDisplay globalDisplay,
                           ApplicationQuit appQuit,
-                          TrustPresenter trustPresenter)
+                          TrustPresenter trustPresenter,
+                          PaiUtil paiUtil)
    {
       commands_ = commands;
       session_ = session;
@@ -172,7 +174,7 @@ public class DesktopApplicationHeader implements ApplicationHeader,
          }
       });
 
-      toolbar_ = new GlobalToolbar(commands, events, pCodeSearch, pUIPrefs_.get(), trustPresenter);
+      toolbar_ = new GlobalToolbar(commands, events, pCodeSearch, pUIPrefs_.get(), trustPresenter, paiUtil);
       ThemeStyles styles = ThemeResources.INSTANCE.themeStyles();
       toolbar_.getWrapper().addStyleName(styles.desktopGlobalToolbarWrapper());
    }

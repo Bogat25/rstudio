@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 
 export const IDE_METHODS = new Set([
-  'protocol/getVersion', 'runtime/getConsoleContent', 'workspace/getCurrentScript',
+  'protocol/getVersion', 'runtime/getConsoleContent', 'workspace/getCurrentScript', 'workspace/getLocalSettings',
   'ui/getCurrentPlot', 'workspace/insertAtCursor', 'workspace/insertIntoNewFile'
 ]);
 

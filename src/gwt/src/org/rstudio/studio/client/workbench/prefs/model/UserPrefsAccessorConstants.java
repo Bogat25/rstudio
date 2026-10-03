@@ -2342,6 +2342,54 @@ public interface UserPrefsAccessorConstants extends Constants {
    String chatProviderEnum_local();
 
    /**
+    * Folder containing the local GGUF model and vision reader. Empty uses the RStudio user data folder.
+    */
+   @DefaultStringValue("Local model folder")
+   String localAssistantModelDirTitle();
+   @DefaultStringValue("Folder containing the local GGUF model and vision reader. Empty uses the RStudio user data folder.")
+   String localAssistantModelDirDescription();
+
+   /**
+    * Empty uses the project's .ai-context folder when present, otherwise the user data context folder.
+    */
+   @DefaultStringValue("Course reference folder")
+   String localAssistantContextDirTitle();
+   @DefaultStringValue("Empty uses the project's .ai-context folder when present, otherwise the user data context folder.")
+   String localAssistantContextDirDescription();
+
+   /**
+    * Number of CPU threads used by the local model.
+    */
+   @DefaultStringValue("CPU threads (0 = automatic)")
+   String localAssistantThreadsTitle();
+   @DefaultStringValue("Number of CPU threads used by the local model.")
+   String localAssistantThreadsDescription();
+
+   /**
+    * Maximum vision tokens per attached picture.
+    */
+   @DefaultStringValue("Picture token budget")
+   String localAssistantImageMaxTokensTitle();
+   @DefaultStringValue("Maximum vision tokens per attached picture.")
+   String localAssistantImageMaxTokensDescription();
+
+   /**
+    * Enable the model's slower reasoning mode. Thinking text is hidden from the answer.
+    */
+   @DefaultStringValue("Enable model thinking")
+   String localAssistantThinkingTitle();
+   @DefaultStringValue("Enable the model's slower reasoning mode. Thinking text is hidden from the answer.")
+   String localAssistantThinkingDescription();
+
+   /**
+    * Number of recent conversation messages included as model context.
+    */
+   @DefaultStringValue("Conversation messages sent with each question")
+   String localAssistantKeepHistoryTitle();
+   @DefaultStringValue("Number of recent conversation messages included as model context.")
+   String localAssistantKeepHistoryDescription();
+
+   /**
     * Control when code suggestions are displayed in the editor.
     */
    @DefaultStringValue("Show code suggestions:")

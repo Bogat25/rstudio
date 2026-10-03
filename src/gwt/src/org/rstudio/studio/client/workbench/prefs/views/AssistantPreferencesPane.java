@@ -29,6 +29,7 @@ import org.rstudio.core.client.resources.ImageResource2x;
 import org.rstudio.core.client.widget.DialogBuilder;
 import org.rstudio.core.client.widget.InfoBar;
 import org.rstudio.core.client.widget.LayoutGrid;
+import org.rstudio.core.client.widget.LabeledTextBox;
 import org.rstudio.core.client.widget.NumericValueWidget;
 import org.rstudio.core.client.widget.Operation;
 import org.rstudio.core.client.widget.ProgressIndicator;
@@ -94,6 +95,8 @@ public class AssistantPreferencesPane extends PreferencesPane
       String selectedAssistant = selAssistant_.getValue();
       prefs.assistant().setGlobalValue(selectedAssistant);
       prefs.chatProvider().setGlobalValue(selChatProvider_.getValue());
+      prefs.localAssistantModelDir().setGlobalValue(localModelDir_.getText().trim());
+      prefs.localAssistantContextDir().setGlobalValue(localContextDir_.getText().trim());
       prefs.assistantTabKeyBehavior().setGlobalValue(selAssistantTabKeyBehavior_.getValue());
       prefs.assistantCompletionsTrigger().setGlobalValue(selAssistantCompletionsTrigger_.getValue());
 
@@ -165,6 +168,10 @@ public class AssistantPreferencesPane extends PreferencesPane
       {
          return false;
       }
+
+      if (localSettingsPanel_.isVisible() &&
+          (!localThreads_.validate() || !localImageTokens_.validate() || !localHistory_.validate()))
+         return false;
 
       return true;
    }
@@ -381,6 +388,25 @@ public class AssistantPreferencesPane extends PreferencesPane
             false);
       selChatProvider_.setValue(prefs_.chatProvider().getGlobalValue());
 
+      localSettingsPanel_ = new VerticalPanel();
+      localModelDir_ = new LabeledTextBox("local-assistant-model-dir");
+      localModelDir_.setLabelText(prefs_.localAssistantModelDir().getTitle());
+      localModelDir_.setTitle(prefs_.localAssistantModelDir().getDescription());
+      localModelDir_.setText(prefs_.localAssistantModelDir().getGlobalValue());
+      localContextDir_ = new LabeledTextBox("local-assistant-context-dir");
+      localContextDir_.setLabelText(prefs_.localAssistantContextDir().getTitle());
+      localContextDir_.setTitle(prefs_.localAssistantContextDir().getDescription());
+      localContextDir_.setText(prefs_.localAssistantContextDir().getGlobalValue());
+      localThreads_ = numericPref(0, 256, prefs_.localAssistantThreads());
+      localImageTokens_ = numericPref(64, 4096, prefs_.localAssistantImageMaxTokens());
+      localHistory_ = numericPref(0, 100, prefs_.localAssistantKeepHistory());
+      localSettingsPanel_.add(lessSpaced(localModelDir_));
+      localSettingsPanel_.add(lessSpaced(localContextDir_));
+      localSettingsPanel_.add(localThreads_);
+      localSettingsPanel_.add(localImageTokens_);
+      localSettingsPanel_.add(checkboxPref(prefs_.localAssistantThinking()));
+      localSettingsPanel_.add(localHistory_);
+
       linkCopilotTos_ = new HelpLink(
             constants_.copilotTermsOfServiceLinkLabel(),
             "github-copilot-terms-of-service",
@@ -421,11 +447,14 @@ public class AssistantPreferencesPane extends PreferencesPane
       // Chat section (displayed first)
       add(headerLabel(constants_.assistantChatTab()));
       add(selChatProvider_);
+      add(localSettingsPanel_);
+      localSettingsPanel_.setVisible(selChatProvider_.getValue().equals(UserPrefsAccessor.CHAT_PROVIDER_LOCAL));
 
       // Add change handler for chat provider to check for Posit Assistant installation
       selChatProvider_.addChangeHandler((event) ->
       {
          String value = selChatProvider_.getValue();
+         localSettingsPanel_.setVisible(value.equals(UserPrefsAccessor.CHAT_PROVIDER_LOCAL));
          if (value.equals(UserPrefsAccessor.CHAT_PROVIDER_POSIT))
          {
             // Block apply until the install/update check resolves (#18350).
@@ -1789,6 +1818,12 @@ public class AssistantPreferencesPane extends PreferencesPane
    private final SelectWidget selAssistantCompletionsTrigger_;
    private final SelectWidget selEditSuggestionDiffGranularity_;
    private final SelectWidget selChatProvider_;
+   private final VerticalPanel localSettingsPanel_;
+   private final LabeledTextBox localModelDir_;
+   private final LabeledTextBox localContextDir_;
+   private final NumericValueWidget localThreads_;
+   private final NumericValueWidget localImageTokens_;
+   private final NumericValueWidget localHistory_;
    private final HelpLink linkCopilotTos_;
    private final Label lblCopilotTos_;
    private final Label lblProjectOverride_;

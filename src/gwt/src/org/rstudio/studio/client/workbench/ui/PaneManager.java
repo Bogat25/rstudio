@@ -2640,6 +2640,21 @@ public class PaneManager
       return false;
    }
 
+   public boolean hideChatIfVisible()
+   {
+      WorkbenchTabPanel panel = getOwnerTabPanel(Tab.Chat);
+      if (panel == null || panel.isEmpty() || !panel.getParentWindow().visible() ||
+          panel.getSelectedTab() != chatTab_)
+         return false;
+      if (isChatInSidebar())
+         setSidebarPref(false);
+      else if (panel.getWidgetCount() > 1)
+         panel.selectNextTab();
+      else
+         panel.getParentWindow().onWindowStateChange(new WindowStateChangeEvent(WindowState.MINIMIZE));
+      return true;
+   }
+
    /**
     * Returns true when the Chat pane is visible in the sidebar and is the
     * selected tab -- i.e., when a second click on the Assistant toolbar

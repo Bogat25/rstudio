@@ -17,6 +17,7 @@ inline const std::vector<std::string>& capabilities()
       "protocol/getVersion",
       "runtime/getConsoleContent",
       "workspace/getCurrentScript",
+      "workspace/getLocalSettings",
       "workspace/insertAtCursor",
       "workspace/insertIntoNewFile",
       "ui/getCurrentPlot"

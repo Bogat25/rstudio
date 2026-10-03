@@ -3664,6 +3664,84 @@ core::Error UserPrefValues::setChatProvider(std::string val)
 }
 
 /**
+ * Folder containing the local GGUF model and vision reader. Empty uses the RStudio user data folder.
+ */
+std::string UserPrefValues::localAssistantModelDir()
+{
+   return readPref<std::string>("local_assistant_model_dir");
+}
+
+core::Error UserPrefValues::setLocalAssistantModelDir(std::string val)
+{
+   return writePref("local_assistant_model_dir", val);
+}
+
+/**
+ * Empty uses the project's .ai-context folder when present, otherwise the user data context folder.
+ */
+std::string UserPrefValues::localAssistantContextDir()
+{
+   return readPref<std::string>("local_assistant_context_dir");
+}
+
+core::Error UserPrefValues::setLocalAssistantContextDir(std::string val)
+{
+   return writePref("local_assistant_context_dir", val);
+}
+
+/**
+ * Number of CPU threads used by the local model.
+ */
+int UserPrefValues::localAssistantThreads()
+{
+   return readPref<int>("local_assistant_threads");
+}
+
+core::Error UserPrefValues::setLocalAssistantThreads(int val)
+{
+   return writePref("local_assistant_threads", val);
+}
+
+/**
+ * Maximum vision tokens per attached picture.
+ */
+int UserPrefValues::localAssistantImageMaxTokens()
+{
+   return readPref<int>("local_assistant_image_max_tokens");
+}
+
+core::Error UserPrefValues::setLocalAssistantImageMaxTokens(int val)
+{
+   return writePref("local_assistant_image_max_tokens", val);
+}
+
+/**
+ * Enable the model's slower reasoning mode. Thinking text is hidden from the answer.
+ */
+bool UserPrefValues::localAssistantThinking()
+{
+   return readPref<bool>("local_assistant_thinking");
+}
+
+core::Error UserPrefValues::setLocalAssistantThinking(bool val)
+{
+   return writePref("local_assistant_thinking", val);
+}
+
+/**
+ * Number of recent conversation messages included as model context.
+ */
+int UserPrefValues::localAssistantKeepHistory()
+{
+   return readPref<int>("local_assistant_keep_history");
+}
+
+core::Error UserPrefValues::setLocalAssistantKeepHistory(int val)
+{
+   return writePref("local_assistant_keep_history", val);
+}
+
+/**
  * Control when code suggestions are displayed in the editor.
  */
 std::string UserPrefValues::assistantCompletionsTrigger()
@@ -4336,6 +4414,12 @@ std::vector<std::string> UserPrefValues::allKeys()
       kDisableRendererAccessibility,
       kAssistant,
       kChatProvider,
+      kLocalAssistantModelDir,
+      kLocalAssistantContextDir,
+      kLocalAssistantThreads,
+      kLocalAssistantImageMaxTokens,
+      kLocalAssistantThinking,
+      kLocalAssistantKeepHistory,
       kAssistantCompletionsTrigger,
       kAssistantCompletionsDelay,
       kAssistantTabKeyBehavior,

@@ -324,6 +324,12 @@ public class UserPrefsAccessor extends Prefs
    public static final String DISABLE_RENDERER_ACCESSIBILITY = "disable_renderer_accessibility";
    public static final String ASSISTANT = "assistant";
    public static final String CHAT_PROVIDER = "chat_provider";
+   public static final String LOCAL_ASSISTANT_MODEL_DIR = "local_assistant_model_dir";
+   public static final String LOCAL_ASSISTANT_CONTEXT_DIR = "local_assistant_context_dir";
+   public static final String LOCAL_ASSISTANT_THREADS = "local_assistant_threads";
+   public static final String LOCAL_ASSISTANT_IMAGE_MAX_TOKENS = "local_assistant_image_max_tokens"; // pragma: allowlist secret
+   public static final String LOCAL_ASSISTANT_THINKING = "local_assistant_thinking";
+   public static final String LOCAL_ASSISTANT_KEEP_HISTORY = "local_assistant_keep_history";
    public static final String ASSISTANT_COMPLETIONS_TRIGGER = "assistant_completions_trigger";
    public static final String ASSISTANT_COMPLETIONS_DELAY = "assistant_completions_delay";
    public static final String ASSISTANT_TAB_KEY_BEHAVIOR = "assistant_tab_key_behavior";
@@ -4294,6 +4300,78 @@ public class UserPrefsAccessor extends Prefs
    public final static String CHAT_PROVIDER_LOCAL = "local";
 
    /**
+    * Folder containing the local GGUF model and vision reader. Empty uses the RStudio user data folder.
+    */
+   public PrefValue<String> localAssistantModelDir()
+   {
+      return string(
+         "local_assistant_model_dir",
+         _constants.localAssistantModelDirTitle(),
+         _constants.localAssistantModelDirDescription(),
+         "");
+   }
+
+   /**
+    * Empty uses the project's .ai-context folder when present, otherwise the user data context folder.
+    */
+   public PrefValue<String> localAssistantContextDir()
+   {
+      return string(
+         "local_assistant_context_dir",
+         _constants.localAssistantContextDirTitle(),
+         _constants.localAssistantContextDirDescription(),
+         "");
+   }
+
+   /**
+    * Number of CPU threads used by the local model.
+    */
+   public PrefValue<Integer> localAssistantThreads()
+   {
+      return integer(
+         "local_assistant_threads",
+         _constants.localAssistantThreadsTitle(),
+         _constants.localAssistantThreadsDescription(),
+         0);
+   }
+
+   /**
+    * Maximum vision tokens per attached picture.
+    */
+   public PrefValue<Integer> localAssistantImageMaxTokens()
+   {
+      return integer(
+         "local_assistant_image_max_tokens",
+         _constants.localAssistantImageMaxTokensTitle(),
+         _constants.localAssistantImageMaxTokensDescription(),
+         256);
+   }
+
+   /**
+    * Enable the model's slower reasoning mode. Thinking text is hidden from the answer.
+    */
+   public PrefValue<Boolean> localAssistantThinking()
+   {
+      return bool(
+         "local_assistant_thinking",
+         _constants.localAssistantThinkingTitle(),
+         _constants.localAssistantThinkingDescription(),
+         false);
+   }
+
+   /**
+    * Number of recent conversation messages included as model context.
+    */
+   public PrefValue<Integer> localAssistantKeepHistory()
+   {
+      return integer(
+         "local_assistant_keep_history",
+         _constants.localAssistantKeepHistoryTitle(),
+         _constants.localAssistantKeepHistoryDescription(),
+         12);
+   }
+
+   /**
     * Control when code suggestions are displayed in the editor.
     */
    public PrefValue<String> assistantCompletionsTrigger()
@@ -5312,6 +5390,18 @@ public class UserPrefsAccessor extends Prefs
          assistant().setValue(layer, source.getString("assistant"));
       if (source.hasKey("chat_provider"))
          chatProvider().setValue(layer, source.getString("chat_provider"));
+      if (source.hasKey("local_assistant_model_dir"))
+         localAssistantModelDir().setValue(layer, source.getString("local_assistant_model_dir"));
+      if (source.hasKey("local_assistant_context_dir"))
+         localAssistantContextDir().setValue(layer, source.getString("local_assistant_context_dir"));
+      if (source.hasKey("local_assistant_threads"))
+         localAssistantThreads().setValue(layer, source.getInteger("local_assistant_threads"));
+      if (source.hasKey("local_assistant_image_max_tokens"))
+         localAssistantImageMaxTokens().setValue(layer, source.getInteger("local_assistant_image_max_tokens"));
+      if (source.hasKey("local_assistant_thinking"))
+         localAssistantThinking().setValue(layer, source.getBool("local_assistant_thinking"));
+      if (source.hasKey("local_assistant_keep_history"))
+         localAssistantKeepHistory().setValue(layer, source.getInteger("local_assistant_keep_history"));
       if (source.hasKey("assistant_completions_trigger"))
          assistantCompletionsTrigger().setValue(layer, source.getString("assistant_completions_trigger"));
       if (source.hasKey("assistant_completions_delay"))
@@ -5656,6 +5746,12 @@ public class UserPrefsAccessor extends Prefs
       prefs.add(disableRendererAccessibility());
       prefs.add(assistant());
       prefs.add(chatProvider());
+      prefs.add(localAssistantModelDir());
+      prefs.add(localAssistantContextDir());
+      prefs.add(localAssistantThreads());
+      prefs.add(localAssistantImageMaxTokens());
+      prefs.add(localAssistantThinking());
+      prefs.add(localAssistantKeepHistory());
       prefs.add(assistantCompletionsTrigger());
       prefs.add(assistantCompletionsDelay());
       prefs.add(assistantTabKeyBehavior());

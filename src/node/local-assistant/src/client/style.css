@@ -1,3 +1,31 @@
 html, body { height: 100%; margin: 0; }
-body { font: 14px "Segoe UI", sans-serif; color: var(--rstudio-editor-color, #202020); background: var(--rstudio-editor-background, #fff); }
-#status { padding: 10px; border-bottom: 1px solid #8885; }
+body { display: flex; flex-direction: column; font: 14px "Segoe UI", "Noto Sans", "Segoe UI Symbol", "Segoe UI Emoji", sans-serif; color: var(--rstudio-editor-foreground, #202020); background: var(--rstudio-editor-background, #fff); }
+* { box-sizing: border-box; }
+#status { flex: none; padding: 8px 10px; border-bottom: 1px solid var(--rstudio-panel-border, #8885); min-height: 34px; overflow-wrap: anywhere; }
+#transcript { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px 12px; overflow-anchor: none; user-select: text; }
+article { margin: 14px 0 24px; overflow-wrap: anywhere; }
+article h2 { font-size: 14px; margin: 0 0 6px; }
+article.user h2 { color: #a22626; } article.assistant h2 { color: #235a9f; }
+article.user .answer { white-space: pre-wrap; }
+.answer p { white-space: pre-wrap; margin: 7px 0; line-height: 1.5; }
+.answer h3 { font-size: 16px; } .answer li { margin: 4px 0; }
+pre { padding: 10px; white-space: pre-wrap; background: var(--rstudio-editorWidget-background, #f3f4f6); border: 1px solid var(--rstudio-panel-border, #ddd); border-radius: 4px; }
+code { font-family: "Cascadia Mono", Consolas, "DejaVu Sans Mono", "Segoe UI Symbol", "Segoe UI Emoji", "Segoe UI", monospace; }
+blockquote { border-left: 3px solid #888; margin-left: 0; padding-left: 12px; }
+a { color: #397bc7; }
+#attachment-bar { flex: none; display: flex; align-items: center; gap: 6px; padding: 4px 8px; }
+.pictures { display: flex; flex-wrap: wrap; gap: 6px; } .pictures span { display: inline-flex; align-items: flex-start; }
+.pictures button { padding: 2px; max-width: 260px; } .pictures img { max-width: 64px; max-height: 54px; display: block; }
+.pictures .caption { display: block; font-size: 12px; overflow-wrap: anywhere; }
+article .pictures img { max-width: 260px; max-height: 170px; }
+#question { flex: none; margin: 0 8px; min-height: 70px; max-height: 40vh; resize: vertical; font: inherit; color: inherit; background: var(--rstudio-editor-background, #fff); border: 1px solid var(--rstudio-panel-border, #999); padding: 7px; }
+#actions { flex: none; display: flex; flex-wrap: wrap; gap: 5px; padding: 8px; }
+button, select { font: inherit; color: inherit; background: var(--rstudio-editorWidget-background, #f3f4f6); border: 1px solid var(--rstudio-panel-border, #999); border-radius: 3px; padding: 4px 7px; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; } [hidden] { display: none !important; }
+dialog { color: inherit; background: var(--rstudio-editor-background, #fff); border: 1px solid var(--rstudio-panel-border, #888); border-radius: 5px; max-width: 90vw; max-height: 90vh; }
+#viewer { resize: both; overflow: auto; width: 650px; height: 500px; }
+#viewer[open] { display: flex; flex-direction: column; }
+.viewer-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: none; }
+#viewer img { display: block; width: 100%; flex: 1; min-height: 0; object-fit: contain; }
+dialog::backdrop { background: #0006; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }

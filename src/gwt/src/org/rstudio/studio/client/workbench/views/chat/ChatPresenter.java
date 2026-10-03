@@ -537,6 +537,9 @@ public class ChatPresenter extends BasePresenter
          case "restart-backend":
             restartBackend();
             break;
+         case "toggle-local-assistant":
+            commands_.assistantPaneToggle().execute();
+            break;
          case "open-global-options":
             commands_.showAssistantOptions().execute();
             break;
@@ -896,6 +899,14 @@ public class ChatPresenter extends BasePresenter
    // presenter is delay-loaded.
    void onAssistantPaneToggle()
    {
+      if (paiUtil_.isChatProviderLocal())
+      {
+         if (poppedOut_)
+            returnChatToMain();
+         if (!paneManager_.hideChatIfVisible())
+            paneManager_.activateTab(PaneManager.Tab.Chat);
+         return;
+      }
       if (poppedOut_)
       {
          satelliteManager_.activateSatelliteWindow(ChatSatellite.NAME);

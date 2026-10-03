@@ -2629,6 +2629,63 @@
    clear = function() { .rs.clearUserPref("chat_provider") }
 )
 
+# Local model folder
+#
+# Folder containing the local GGUF model and vision reader. Empty uses the
+# RStudio user data folder.
+.rs.uiPrefs$localAssistantModelDir <- list(
+   get = function() { .rs.getUserPref("local_assistant_model_dir") },
+   set = function(value) { .rs.setUserPref("local_assistant_model_dir", value) },
+   clear = function() { .rs.clearUserPref("local_assistant_model_dir") }
+)
+
+# Course reference folder
+#
+# Empty uses the project's .ai-context folder when present, otherwise the user
+# data context folder.
+.rs.uiPrefs$localAssistantContextDir <- list(
+   get = function() { .rs.getUserPref("local_assistant_context_dir") },
+   set = function(value) { .rs.setUserPref("local_assistant_context_dir", value) },
+   clear = function() { .rs.clearUserPref("local_assistant_context_dir") }
+)
+
+# CPU threads (0 = automatic)
+#
+# Number of CPU threads used by the local model.
+.rs.uiPrefs$localAssistantThreads <- list(
+   get = function() { .rs.getUserPref("local_assistant_threads") },
+   set = function(value) { .rs.setUserPref("local_assistant_threads", value) },
+   clear = function() { .rs.clearUserPref("local_assistant_threads") }
+)
+
+# Picture token budget
+#
+# Maximum vision tokens per attached picture.
+.rs.uiPrefs$localAssistantImageMaxTokens <- list(
+   get = function() { .rs.getUserPref("local_assistant_image_max_tokens") },
+   set = function(value) { .rs.setUserPref("local_assistant_image_max_tokens", value) },
+   clear = function() { .rs.clearUserPref("local_assistant_image_max_tokens") }
+)
+
+# Enable model thinking
+#
+# Enable the model's slower reasoning mode. Thinking text is hidden from the
+# answer.
+.rs.uiPrefs$localAssistantThinking <- list(
+   get = function() { .rs.getUserPref("local_assistant_thinking") },
+   set = function(value) { .rs.setUserPref("local_assistant_thinking", value) },
+   clear = function() { .rs.clearUserPref("local_assistant_thinking") }
+)
+
+# Conversation messages sent with each question
+#
+# Number of recent conversation messages included as model context.
+.rs.uiPrefs$localAssistantKeepHistory <- list(
+   get = function() { .rs.getUserPref("local_assistant_keep_history") },
+   set = function(value) { .rs.setUserPref("local_assistant_keep_history", value) },
+   clear = function() { .rs.clearUserPref("local_assistant_keep_history") }
+)
+
 # Show code suggestions:
 #
 # Control when code suggestions are displayed in the editor.

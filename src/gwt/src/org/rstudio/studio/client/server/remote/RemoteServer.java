@@ -7234,6 +7234,17 @@ public class RemoteServer implements Server
    }
 
    @Override
+   public void chatCurrentScript(String requestId, String content, boolean available,
+                                  ServerRequestCallback<VoidResponse> requestCallback)
+   {
+      JSONArray params = new JSONArray();
+      params.set(0, new JSONString(requestId));
+      params.set(1, new JSONString(content));
+      params.set(2, JSONBoolean.getInstance(available));
+      sendRequest(RPC_SCOPE, "chat_current_script", params, requestCallback);
+   }
+
+   @Override
    public void chatGetVersion(ServerRequestCallback<String> requestCallback)
    {
       sendRequest(RPC_SCOPE, "chat_get_version", requestCallback);

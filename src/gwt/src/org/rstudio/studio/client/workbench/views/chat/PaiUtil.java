@@ -37,7 +37,7 @@ public class PaiUtil
       userPrefs_ = userPrefs;
 
       // Initialize cached project options from session info
-      projectOptions_ = session_.getSessionInfo().getAssistantProjectOptions();
+      session_.withSessionInfo(info -> projectOptions_ = info.getAssistantProjectOptions());
 
       // Listen for project options changes to keep cache updated
       events.addHandler(ProjectOptionsChangedEvent.TYPE, (event) ->
@@ -63,7 +63,7 @@ public class PaiUtil
     */
    public boolean isPositAssistantEnabled()
    {
-      return session_.getSessionInfo().getPositAssistantEnabled();
+      return session_.getSessionInfo() != null && session_.getSessionInfo().getPositAssistantEnabled();
    }
 
    /**
@@ -76,7 +76,7 @@ public class PaiUtil
     */
    public boolean isPositAssistantInstallationEnabled()
    {
-      return session_.getSessionInfo().getPositAssistantInstallationEnabled();
+      return session_.getSessionInfo() != null && session_.getSessionInfo().getPositAssistantInstallationEnabled();
    }
 
    /**

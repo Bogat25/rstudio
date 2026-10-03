@@ -39,6 +39,7 @@ public class GetEditorContextEvent extends CrossWindowEvent<GetEditorContextEven
       
       public final native int getType()     /*-{ return this["type"]; }-*/;
       public final native String getDocId() /*-{ return this["id"];   }-*/;
+      public final native String getChatRequestId() /*-{ return this["chatRequestId"]; }-*/;
    }
 
    public static class DocumentSelection extends JavaScriptObject
@@ -107,6 +108,7 @@ public class GetEditorContextEvent extends CrossWindowEvent<GetEditorContextEven
    public static final int TYPE_ACTIVE_EDITOR  = 0;
    public static final int TYPE_CONSOLE_EDITOR = 1;
    public static final int TYPE_SOURCE_EDITOR  = 2;
+   public static final int TYPE_LOCAL_ASSISTANT = 3;
 
    // Boilerplate ----
 
