@@ -174,7 +174,21 @@ set NODEBUNDLE_OUTPUT=node
 :: Install 'common' dependencies first.
 cd /d "%COMMON_INSTALL_DIR%"
 
+REM The install helper creates the version folder before extracting, so a failed
+REM extraction would otherwise be skipped as "already installed" on the next run.
+if exist %GWT_FOLDER% if not exist gwtproject\gwt\gwt-rstudio\gwt-dev.jar (
+  echo -- Removing incomplete GWT directory from a prior failed install
+  rmdir /s /q %GWT_FOLDER%
+  if exist %GWT_FOLDER% (
+    echo ^^!^^! ERROR: Could not remove incomplete GWT directory. Close any process holding files in it and retry.
+    exit /b 1
+  )
+)
 %RUN% install GWT
+if not exist gwtproject\gwt\gwt-rstudio\gwt-dev.jar (
+  echo ^^!^^! ERROR: GWT install failed: gwtproject\gwt\gwt-rstudio\gwt-dev.jar not found.
+  exit /b 1
+)
 %RUN% install DICTIONARIES
 %RUN% install MATHJAX
 %RUN% install MATHJAX4

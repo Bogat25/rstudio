@@ -313,7 +313,12 @@ if defined _OUTPUT (
   echo -- Extracting %_ARCHIVE%
 )
 
-tar -xf %_ARCHIVE%
+:: Prefer the bsdtar shipped with Windows: a GNU tar earlier on the PATH (e.g.
+:: from Rtools or Git) reads 'C:\...' as a remote 'host:path' archive.
+set "_TAR=tar"
+if exist "%SystemRoot%\System32\tar.exe" set "_TAR=%SystemRoot%\System32\tar.exe"
+
+"%_TAR%" -xf "%_ARCHIVE%"
 
 if %ERRORLEVEL% neq 0 (
   echo ^^!^^! ERROR: Could not extract %_ARCHIVE%. [exit code %ERRORLEVEL%]
