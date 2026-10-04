@@ -1,10 +1,13 @@
 set(LOCAL_ASSISTANT_SOURCE "${CMAKE_CURRENT_LIST_DIR}")
+
+# Use the same pinned node as the desktop build (defines NODEJS, NODEJS_PATH);
+# it also knows the '-arm64' folder used on Apple Silicon.
+include("${CMAKE_CURRENT_LIST_DIR}/../CMakeNodeTools.txt")
+set(LOCAL_ASSISTANT_BUILD_NODE "${NODEJS}")
 if(WIN32)
-   set(LOCAL_ASSISTANT_BUILD_NODE "${RSTUDIO_DEPENDENCIES_DIR}/common/node/${RSTUDIO_NODE_VERSION}/node.exe")
-   set(LOCAL_ASSISTANT_NPM_CLI "${RSTUDIO_DEPENDENCIES_DIR}/common/node/${RSTUDIO_NODE_VERSION}/node_modules/npm/bin/npm-cli.js")
+   set(LOCAL_ASSISTANT_NPM_CLI "${NODEJS_PATH}/node_modules/npm/bin/npm-cli.js")
 else()
-   set(LOCAL_ASSISTANT_BUILD_NODE "${RSTUDIO_DEPENDENCIES_DIR}/common/node/${RSTUDIO_NODE_VERSION}/bin/node")
-   set(LOCAL_ASSISTANT_NPM_CLI "${RSTUDIO_DEPENDENCIES_DIR}/common/node/${RSTUDIO_NODE_VERSION}/lib/node_modules/npm/bin/npm-cli.js")
+   set(LOCAL_ASSISTANT_NPM_CLI "${NODEJS_PATH}/../lib/node_modules/npm/bin/npm-cli.js")
 endif()
 if(NOT EXISTS "${LOCAL_ASSISTANT_BUILD_NODE}" OR NOT EXISTS "${LOCAL_ASSISTANT_NPM_CLI}")
    message(FATAL_ERROR "Install RStudio's pinned Node build dependency before building the local assistant.")
