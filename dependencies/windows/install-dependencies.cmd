@@ -269,10 +269,17 @@ if exist node\%NODEBUNDLE_FILE% (
   rmdir /s /q node\%NODEBUNDLE_FILE% 2>NUL
 )
 
+REM Pin the global prefix to this node folder, where the GWT and Electron builds
+REM look for yarn; a user-level npm prefix (as on GitHub runners) would
+REM otherwise send it elsewhere.
 pushd node\%NODEBUILD_VERSION%
-if not exist yarn.cmd (
+if not exist node_modules\yarn\bin\yarn.cmd (
   echo -- Installing yarn
-  call npm install --global yarn
+  call npm install --global --prefix "%CD%" yarn
+)
+if not exist node_modules\yarn\bin\yarn.cmd (
+  echo ^^!^^! ERROR: yarn install failed: node\%NODEBUILD_VERSION%\node_modules\yarn\bin\yarn.cmd not found.
+  exit /b 1
 )
 popd
 
