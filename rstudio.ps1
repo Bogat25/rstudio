@@ -160,7 +160,12 @@ function Invoke-DeveloperCommand([string[]]$Arguments, [string]$Label) {
     $helper = Join-Path $Tree 'src\cpp\tools\windows-dev.cmd'
     $line = ($Arguments | ForEach-Object { Cmd-Quote $_ }) -join ' '
     [IO.File]::WriteAllText($batch, "@echo off`r`ncall $(Cmd-Quote $helper) || exit /b 1`r`n$line`r`nexit /b %ERRORLEVEL%`r`n")
-    Invoke-Logged 'cmd.exe' @('/d','/c',$batch) $Tree $Label
+    # Keep Rtools off the PATH, as make-package.bat does: its CMake 3.31 would
+    # shadow Visual Studio's (appended last) and report VS 2026 as toolset 143.
+    $savedPath = $env:PATH
+    $env:PATH = (($env:PATH -split ';') | Where-Object { $_ -and $_ -notmatch '(^|\\)rtools[^\\]*(\\|$)' }) -join ';'
+    try { Invoke-Logged 'cmd.exe' @('/d','/c',$batch) $Tree $Label }
+    finally { $env:PATH = $savedPath }
 }
 
 function Copy-Directory([string]$Source, [string]$Target, [string[]]$Extra = @()) {
