@@ -123,7 +123,10 @@ jobs:
           . .\rstudio.ps1 -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
           Initialize-Toolchain
           Require-BuildTools
-          Invoke-Logged $Node @($NpmCli,'ci','--no-audit','--no-fund') (Join-Path $Repo 'e2e\rstudio') 'gui-dependencies'
+          # The check drives the app through Playwright's CDP client only; skip
+          # install scripts so native e2e modules (better-sqlite3) are not
+          # compiled, which node-gyp 11 cannot do against Visual Studio 2026.
+          Invoke-Logged $Node @($NpmCli,'ci','--no-audit','--no-fund','--ignore-scripts') (Join-Path $Repo 'e2e\rstudio') 'gui-dependencies'
           Invoke-Logged $Node @((Join-Path $Repo 'package\windows\test-runtime.cjs'),$Stage,$BuildRoot) $Repo 'runtime-test'
 
       - name: Upload the installer and checksum
