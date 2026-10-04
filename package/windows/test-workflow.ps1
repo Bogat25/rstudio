@@ -23,9 +23,12 @@ try {
         if ($v.Text -ne '1.2.3-rc1' -or $v.Numeric -ne '1.2.3.0') { throw 'Version conversion failed.' }
         $script:Version = '1.2.3'
         if ((Resolve-Version).Suffix -ne '') { throw 'Release suffix failed.' }
+        $script:Version = 'v0.2.0-rc.1'
+        $v = Resolve-Version
+        if ($v.Text -ne '0.2.0-rc.1' -or $v.Suffix -ne '-rc.1' -or $v.Numeric -ne '0.2.0.0') { throw 'Dotted prerelease failed.' }
     }
     Check 'reject invalid and oversized versions' {
-        foreach ($v in '1.2','1.2.3 & whoami','65536.1.0') {
+        foreach ($v in '1.2','1.2.3 & whoami','65536.1.0','1.2.3-rc..1','1.2.3-.rc','1.2.3-rc.') {
             $script:Version = $v
             Must-Throw { Resolve-Version }
         }

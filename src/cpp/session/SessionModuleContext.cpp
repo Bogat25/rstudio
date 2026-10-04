@@ -14,6 +14,7 @@
  */
 
 #include "SessionModuleContextInternal.hpp"
+#include <session/SessionVersion.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -413,16 +414,9 @@ SEXP rs_previewAllowedFunctions()
 // NOTE: Used by 'rstudioapi'; unofficially part of the API.
 SEXP rs_rstudioVersion()
 {
-   std::string numericVersion(RSTUDIO_VERSION_MAJOR);
-   numericVersion.append(".")
-      .append(RSTUDIO_VERSION_MINOR).append(".")
-      .append(RSTUDIO_VERSION_PATCH);
-   std::string buildVersion = boost::regex_replace(
-      std::string(RSTUDIO_VERSION_SUFFIX), boost::regex("[a-zA-Z\\-+]"), "");
-   // Local releases can omit the upstream build number. R's package_version()
-   // rejects the trailing dot that an empty suffix would otherwise produce.
-   if (!buildVersion.empty())
-      numericVersion.append(".").append(buildVersion);
+   std::string numericVersion = numericRStudioVersion(
+      RSTUDIO_VERSION_MAJOR, RSTUDIO_VERSION_MINOR,
+      RSTUDIO_VERSION_PATCH, RSTUDIO_VERSION_SUFFIX);
 
    r::sexp::Protect rProtect;
    return r::sexp::create(numericVersion, &rProtect);

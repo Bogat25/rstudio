@@ -53,6 +53,7 @@
 #include <r/session/RSession.hpp>
 
 #include <session/SessionModuleContext.hpp>
+#include <session/SessionVersion.hpp>
 #include <session/SessionConsoleProcess.hpp>
 #include <session/SessionAsyncRProcess.hpp>
 #include <session/SessionUrlPorts.hpp>
@@ -1985,16 +1986,9 @@ bool isSiteProject(const std::string& site)
 
 std::string parsableRStudioVersion()
 {
-   std::string version(RSTUDIO_VERSION_MAJOR);
-   version.append(".")
-         .append(RSTUDIO_VERSION_MINOR)
-         .append(".")
-         .append(RSTUDIO_VERSION_PATCH);
-   std::string buildVersion = boost::regex_replace(
-      std::string(RSTUDIO_VERSION_SUFFIX), boost::regex("[a-zA-Z\\-+]"), "");
-   if (!buildVersion.empty())
-      version.append(".").append(buildVersion);
-   return version;
+   return numericRStudioVersion(
+      RSTUDIO_VERSION_MAJOR, RSTUDIO_VERSION_MINOR,
+      RSTUDIO_VERSION_PATCH, RSTUDIO_VERSION_SUFFIX);
 }
 
 

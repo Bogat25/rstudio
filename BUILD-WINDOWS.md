@@ -89,6 +89,21 @@ files and scratch files. It preserves coursework, preferences and R history.
 Models in a custom external directory remain the user's responsibility.
 The existing upstream NSIS packaging remains available separately.
 
+## Installers from version tags
+
+[Windows installer](.github/workflows/windows-installer.yml) builds on pushed
+tags such as `v0.1.1`, `v0.2.0-rc.1` or `0.1.1`. It validates the version,
+installs the Windows build dependencies, builds the optimized desktop, and
+checks version conversion, assistant protocols, packaged startup and installer
+installation, upgrades and removal. The installer includes R 4.6.1 and excludes
+the model downloads.
+
+Open **Actions > Windows installer > the successful tag run > Artifacts** and
+download `RStudio-AI-<version>-windows-x64`. Extract the ZIP to get the setup
+EXE and its SHA-256 file. Artifacts are retained for 90 days, subject to the
+repository's retention policy. The workflow requires no custom credentials
+and does not create GitHub releases.
+
 ## Checks and cleanup
 
 ```powershell

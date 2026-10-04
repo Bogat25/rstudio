@@ -136,3 +136,26 @@ Choose **Just me** for `%LOCALAPPDATA%\Programs\RStudio` without administrator
 rights, or use the ZIP and a user-installed R. Replacing an existing all-users
 installation may still require elevation to remove it. This conclusion comes
 from the current NSIS source; installer/UAC behavior was not exercised here.
+
+## Fork installer and prerelease validation, 2026-10-04
+
+The fork's [Windows build workflow](../../../BUILD-WINDOWS.md) now uses a
+separate per-user Inno Setup installer with bundled R. The upstream NSIS
+limitations above still apply to that separate packaging path.
+
+The `0.2.0-rc.1` regression build completed in Release mode. Both session
+version conversions now produce numeric components that R accepts, including
+dotted prerelease suffixes. Validation passed:
+
+- All three `SessionVersionTest.*` C++ regression tests.
+- All nine Windows workflow tests, including dotted and malformed version tags.
+- All 21 standard assistant protocol tests and TypeScript type checking;
+  the optional real-model test was skipped in this run.
+- All 21 installer tests covering installation, bundled R, upgrade preservation
+  of coursework/settings/history/models, and uninstall cleanup.
+- Packaged GUI startup, R execution using bundled R, and offline Chat loading.
+- `actionlint` and PowerShell syntax checks for the version-tag workflow.
+
+The new setup EXE and SHA-256 file were built locally. The tag workflow uploads
+these files as an Actions artifact after its checks pass; it has not yet been
+executed on GitHub. All changes and checks were performed locally.

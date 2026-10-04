@@ -359,11 +359,11 @@ function Resolve-Version {
     $v = $Version
     if (-not $v) {
         $tags = @(& git -C $Repo tag --points-at HEAD)
-        $v = $tags | Where-Object { $_ -match '^v?\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$' } | Select-Object -First 1
+        $v = $tags | Where-Object { $_ -match '^v?\d+\.\d+\.\d+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$' } | Select-Object -First 1
         if (-not $v) { $v = '0.0.0-dev' }
     }
     $v = $v -replace '^v',''
-    if ($v -notmatch '^(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.]+)?$') { throw 'Version must look like 0.1.0 or 0.2.0-rc1.' }
+    if ($v -notmatch '^(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$') { throw 'Version must look like 0.1.0, 0.2.0-rc1 or 0.2.0-rc.1.' }
     foreach ($part in $Matches[1],$Matches[2],$Matches[3]) {
         if ([long]$part -gt 65535) { throw 'Numeric version components must fit Windows version fields.' }
     }

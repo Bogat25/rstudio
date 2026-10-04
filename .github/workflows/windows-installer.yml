@@ -1,0 +1,147 @@
+name: Windows installer
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+      - '[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-installer-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  BUILD_ROOT: C:\rstudio-build
+  RSTUDIO_TOOLS_ROOT: C:\rstudio-tools
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+jobs:
+  installer:
+    # Select the compiler matching the msvc145 dependency archives.
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Check out the tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate the version tag
+        id: version
+        env:
+          VERSION_TAG: ${{ github.ref_name }}
+        run: |
+          . .\rstudio.ps1 -BuildRoot $env:BUILD_ROOT -Version $env:VERSION_TAG
+          $versionInfo = Resolve-Version
+          "version=$($versionInfo.Text)" >> $env:GITHUB_OUTPUT
+
+      - name: Set up the bundled R version
+        uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+        with:
+          r-version: '4.6.1'
+          use-public-rspm: false
+
+      - name: Cache build dependencies and verified downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ env.RSTUDIO_TOOLS_ROOT }}
+            ${{ env.BUILD_ROOT }}\cache
+            ${{ env.BUILD_ROOT }}\tools\innosetup
+          key: rstudio-installer-msvc145-${{ hashFiles('dependencies/**', 'rstudio.ps1', '.github/workflows/windows-installer.yml') }}
+
+      - name: Set up MSVC
+        uses: ./.github/actions/setup-msvc-environment
+
+      - name: Install pinned Ant and select Java 17
+        run: |
+          $jdk = $env:JAVA_HOME_17_X64
+          if (-not $jdk -or -not (Test-Path (Join-Path $jdk 'bin\javac.exe'))) {
+            throw 'The build requires Java 17.'
+          }
+          "JAVA_HOME=$jdk" >> $env:GITHUB_ENV
+          $archive = Join-Path $env:BUILD_ROOT 'cache\apache-ant-1.10.14-bin.zip'
+          New-Item -ItemType Directory -Force -Path (Split-Path $archive),$env:RSTUDIO_TOOLS_ROOT | Out-Null
+          if (-not (Test-Path $archive)) {
+            curl.exe --fail --location --retry 3 --output $archive 'https://archive.apache.org/dist/ant/binaries/apache-ant-1.10.14-bin.zip'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          $expected = '6e85cf45726ee88c916976aba07488b79da84be1a31b5c5441a65c28bb4436b5a5a373402c78ac6a3827bd261fb924124bb9534e52d6429162eaf57b9737124c'
+          if ((Get-FileHash $archive -Algorithm SHA512).Hash.ToLowerInvariant() -ne $expected) {
+            throw 'Ant archive checksum mismatch.'
+          }
+          if (-not (Test-Path (Join-Path $env:RSTUDIO_TOOLS_ROOT 'apache-ant-1.10.14\bin\ant.bat'))) {
+            Expand-Archive -LiteralPath $archive -DestinationPath $env:RSTUDIO_TOOLS_ROOT
+          }
+
+      - name: Install RStudio build dependencies
+        shell: cmd
+        run: call dependencies\windows\install-dependencies.cmd
+
+      - name: Install the frontend translation tools
+        run: |
+          $venv = 'src\gwt\tools\i18n-helpers\VENV'
+          if (-not (Test-Path "$venv\Scripts\python.exe")) {
+            python -m venv $venv
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          & "$venv\Scripts\python.exe" -m pip install --disable-pip-version-check -r src\gwt\tools\i18n-helpers\commands.cmd.xml\requirements.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Fetch the CPU server and installer compiler
+        run: .\rstudio.cmd fetch -NoModel -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
+
+      - name: Build the optimized desktop
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: .\rstudio.cmd full -Version $env:VERSION -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
+
+      - name: Test numeric version conversion
+        env:
+          GTEST_FILTER: SessionVersionTest.*
+        run: |
+          & "$env:BUILD_ROOT\build\src\cpp\rstudio-tests.bat" --scope rsession
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build the per-user installer
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: .\rstudio.cmd installer -Version $env:VERSION -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
+
+      - name: Check assistant protocols and installer upgrades
+        run: .\rstudio.cmd test -Installer -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
+
+      - name: Check the packaged IDE, bundled R and offline Chat
+        run: |
+          . .\rstudio.ps1 -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
+          Initialize-Toolchain
+          Require-BuildTools
+          Invoke-Logged $Node @($NpmCli,'ci','--no-audit','--no-fund') (Join-Path $Repo 'e2e\rstudio') 'gui-dependencies'
+          Invoke-Logged $Node @((Join-Path $Repo 'package\windows\test-runtime.cjs'),$Stage,$BuildRoot) $Repo 'runtime-test'
+
+      - name: Upload the installer and checksum
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: RStudio-AI-${{ steps.version.outputs.version }}-windows-x64
+          path: |
+            ${{ env.BUILD_ROOT }}\installer\RStudio-AI-${{ steps.version.outputs.version }}-setup.exe
+            ${{ env.BUILD_ROOT }}\installer\RStudio-AI-${{ steps.version.outputs.version }}-setup.exe.sha256
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-installer-logs-${{ github.run_id }}
+          path: ${{ env.BUILD_ROOT }}\logs\*.log
+          if-no-files-found: ignore
+          retention-days: 14
