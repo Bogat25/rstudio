@@ -23,6 +23,8 @@ jobs:
     # Select the compiler matching the msvc145 dependency archives.
     runs-on: windows-2025-vs2026
     timeout-minutes: 180
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     defaults:
       run:
         shell: pwsh
@@ -148,3 +150,53 @@ jobs:
           path: ${{ env.BUILD_ROOT }}\logs\*.log
           if-no-files-found: ignore
           retention-days: 14
+
+  release:
+    needs: installer
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download the installer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: RStudio-AI-${{ needs.installer.outputs.version }}-windows-x64
+          path: dist
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.installer.outputs.version }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          exe="RStudio-AI-$VERSION-setup.exe"
+          sha=$(cut -d' ' -f1 "dist/$exe.sha256")
+          size=$(( $(stat -c %s "dist/$exe") / 1048576 ))
+          cat > dist/release-notes.md <<EOF
+          RStudio Desktop with bundled R and an offline AI assistant, for Windows x64.
+
+          ### Install
+          Download \`$exe\` ($size MB) and run it. No administrator rights are needed;
+          it installs for the current user. The installer is not code-signed, so Windows
+          SmartScreen may warn; choose *More info > Run anyway*.
+
+          The AI model is not in the installer: the app offers to download it the first
+          time the assistant needs it.
+
+          ### Checksum
+          SHA-256 of the installer:
+          \`$sha\`
+
+          Built from $COMMIT.
+          EOF
+          flags=()
+          if [[ "$VERSION" == *-* ]]; then flags+=(--prerelease); fi
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "RStudio AI $VERSION" \
+            --notes-file dist/release-notes.md \
+            --verify-tag \
+            "${flags[@]}" \
+            "dist/$exe" "dist/$exe.sha256"
