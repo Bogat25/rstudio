@@ -117,10 +117,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: .\rstudio.cmd installer -Version $env:VERSION -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
 
-      - name: Check assistant protocols and installer upgrades
-        run: .\rstudio.cmd test -Installer -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
-
-      - name: Check the packaged IDE, bundled R and offline Chat
+      - name: Install packaged GUI check dependencies
         run: |
           . .\rstudio.ps1 -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
           Initialize-Toolchain
@@ -129,6 +126,15 @@ jobs:
           # install scripts so native e2e modules (better-sqlite3) are not
           # compiled, which node-gyp 11 cannot do against Visual Studio 2026.
           Invoke-Logged $Node @($NpmCli,'ci','--no-audit','--no-fund','--ignore-scripts') (Join-Path $Repo 'e2e\rstudio') 'gui-dependencies'
+
+      - name: Check assistant protocols and installer upgrades
+        run: .\rstudio.cmd test -Installer -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
+
+      - name: Check the packaged launcher, bundled R and offline Chat
+        run: |
+          . .\rstudio.ps1 -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
+          Initialize-Toolchain
+          Require-BuildTools
           Invoke-Logged $Node @((Join-Path $Repo 'package\windows\test-runtime.cjs'),$Stage,$BuildRoot) $Repo 'runtime-test'
 
       - name: Upload the installer and checksum

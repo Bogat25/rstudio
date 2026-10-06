@@ -159,3 +159,73 @@ dotted prerelease suffixes. Validation passed:
 The new setup EXE and SHA-256 file were built locally. The tag workflow uploads
 these files as an Actions artifact after its checks pass; it has not yet been
 executed on GitHub. All changes and checks were performed locally.
+
+## Custom installation path startup correction, 2026-10-06
+
+The installed 0.1.5 application reported **R not found** even though its
+bundled R files existed. The shipped launcher set TMPDIR, TMP and TEMP to
+`work\tmp` under the installation folder. When that path contained spaces
+and Windows did not supply a usable short name, R refused to initialize its
+temporary directory. RStudio then displayed its generic R discovery error.
+This agrees with [R's temporary-directory requirements](https://www.stat.ethz.ch/R-manual/R-devel/library/base/html/tempfile.html).
+
+The exact dialog was reproduced in a private copy of the installed app, with
+the original launcher. Instrumentation in that private copy recorded only
+query metadata: the executable existed, but both the background and synchronous
+R queries exited with status 2 and returned no result marker. Changing only
+the temporary-directory location to a writable path without spaces made R
+return its version successfully. Neither the installed application binary
+nor user settings were instrumented.
+
+The launcher now checks writable temp paths before opening RStudio. It prefers
+portable `work\tmp`, using its Windows short path when suitable, and otherwise
+selects an `RStudio-AI` subdirectory under a user temp location. All three R temp
+variables use the selected path. Preferences, libraries, history and coursework
+still stay under `work`; no machine environment settings or elevation are needed.
+
+Release GUI checks now run the shipped launcher after relocation into a path
+containing spaces, without supplying R_HOME or RSTUDIO_WHICH_R. They verify
+the actual R console, bundled R.home(), creation of a temporary file through
+R and offline Chat. The previous check started rstudio.exe with test-supplied
+R and temp locations, so it missed the launcher failure.
+Installer checks compile the production payload with a unique test ID and
+name, allowing them to run alongside an existing installation, and exercise
+the actual launcher inside the newly installed custom folder. The tag workflow
+installs Playwright's CDP dependencies before these checks.
+
+Validation of the rebuilt 0.1.6 package passed:
+
+- Optimized desktop build and Inno Setup compilation.
+- Three SessionVersionTest C++ checks.
+- Assistant TypeScript checking and 21 protocol tests; one real-model test skipped.
+- Nine Windows workflow checks.
+- Four relocated packaged GUI checks, including writable R temp files.
+- Twenty-two installer checks plus four installed GUI checks, covering custom-path
+  startup, bundled R, offline Chat, upgrade preservation and uninstall cleanup.
+  The installer test caller was **not elevated**; registration used HKCU.
+- Installer and app manifests request `asInvoker`. Installer file version is
+  0.1.6.0, its checksum matches, and staging contains the corrected launcher
+  and no diagnostic instrumentation.
+- Node syntax, PowerShell syntax, actionlint and Git whitespace checks.
+
+Standalone Rscript emitted C.UTF-8 locale warnings but returned the bundled
+version successfully; the earlier locale limitation remains separate.
+Real model inference, clipboard images and the full session suite were not
+repeated for this launcher correction. No hosted workflow or GitHub write occurred.
+
+The existing 0.1.5 installation's launcher was also repaired after verifying
+that it had no custom edits. Its original is retained as
+`D:\rstudio-installer-fix-09f112d2aad91\installed-launcher-original.cmd`.
+The existing installation remained registered after the isolated tests.
+Close its old error dialog and reopen through its shortcut to use the repair.
+
+Evidence is under `D:\rstudio-installer-fix-09f112d2aad91`: `original-launcher.log`,
+`query-probe.jsonl`, `fixed-launcher.log`, `installer-build.log`,
+`rebuilt-runtime.log`, `native-version-tests.log` and `installer-tests.log`.
+The R query diagnostics contain flags, counts and exit status, without R
+stdout/stderr or authentication values. The production installer contains no
+diagnostic hooks.
+
+Local installer: `D:\rstudio-build\installer\RStudio-AI-0.1.6-setup.exe`
+(710,412,617 bytes), with an adjacent checksum file. SHA-256:
+`32203299ea4438fc0b8921a60a470151d3c2ab55af0837abb72fa7cd483f85ef`.

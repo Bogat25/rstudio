@@ -55,9 +55,13 @@ Only processes belonging to this build root are stopped before relinking.
 
 The portable layout contains `RStudio`, a copied `R` runtime with its licenses,
 and `Start-RStudio.cmd`. Always use the launcher: it selects the bundled R and
-keeps preferences, session data, R packages, temporary files and coursework
+keeps preferences, session data, R packages and coursework
 under `work` beside the launcher. Paths follow the launcher when the drive
-letter changes. Open Chat with **Ctrl+Shift+T**.
+letter changes. R's temporary directory must have a path without spaces.
+The launcher uses `work\tmp` or its Windows short path when suitable; otherwise
+it uses an `RStudio-AI` folder under a writable user temp location. This also
+supports custom installation folders on drives without 8.3 short names.
+Open Chat with **Ctrl+Shift+T**.
 Course reference files go in `work\data\local-assistant\context`; the editable
 assistant prompt is `work\data\local-assistant\system_prompt.txt` after first use.
 
@@ -123,7 +127,9 @@ dependencies; install those with `npm ci` first if needed. Its screenshot is
 saved under `logs`. It uses Chromium CDP because the packaged Electron fuses
 disable the Node inspector.
 `test -Installer` additionally installs into a temporary folder containing
-spaces, upgrades, verifies preservation and runs the bundled R, then uninstalls.
-It refuses to run if RStudio AI is already installed, avoiding replacement of
-your installation. `clean` removes generated build and staging trees but keeps
+spaces, starts its shipped launcher, checks bundled R and temp-file creation,
+upgrades, verifies preservation, then uninstalls. It compiles the same payload
+with a unique test application ID and name, so an existing RStudio AI is left
+in place. GUI checks use the existing Playwright dependencies mentioned above.
+`clean` removes generated build and staging trees but keeps
 downloads, compiler tools, installers and portable work.

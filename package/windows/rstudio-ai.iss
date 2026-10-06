@@ -11,19 +11,25 @@
 #ifndef OutputDir
   #define OutputDir "."
 #endif
+#ifndef AppIdValue
+  #define AppIdValue "{{3F51F797-68EC-44F4-9366-F3D5F22B306D}"
+#endif
+#ifndef AppNameValue
+  #define AppNameValue "RStudio AI"
+#endif
 
 [Setup]
 ; Stable and distinct from both upstream RStudio and RGui AI.
-AppId={{3F51F797-68EC-44F4-9366-F3D5F22B306D}
-AppName=RStudio AI
+AppId={#AppIdValue}
+AppName={#AppNameValue}
 AppVersion={#AppVersion}
-AppVerName=RStudio AI {#AppVersion}
+AppVerName={#AppNameValue} {#AppVersion}
 AppPublisher=RStudio AI
 AppComments=RStudio with a bundled R runtime and offline statistics assistant
 VersionInfoVersion={#NumericVersion}
-VersionInfoProductName=RStudio AI
+VersionInfoProductName={#AppNameValue}
 PrivilegesRequired=lowest
-DefaultDirName={autopf}\RStudio AI
+DefaultDirName={autopf}\{#AppNameValue}
 DisableProgramGroupPage=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -32,7 +38,7 @@ OutputDir={#OutputDir}
 OutputBaseFilename=RStudio-AI-{#AppVersion}-setup
 SetupIconFile=..\..\src\node\desktop\resources\icons\RStudio.ico
 UninstallDisplayIcon={app}\RStudio\rstudio.exe
-UninstallDisplayName=RStudio AI {#AppVersion}
+UninstallDisplayName={#AppNameValue} {#AppVersion}
 LicenseFile={#StageDir}\RStudio\resources\app\COPYING
 ; The runtime includes Electron and Quarto; fast compression keeps local
 ; rebuilds practical while retaining the same LZMA2 installer format as RGui.
@@ -63,8 +69,8 @@ Type: files; Name: "{app}\work\data\local-assistant\models\*.gguf.part"
 Type: filesandordirs; Name: "{app}\work\tmp"
 
 [Icons]
-Name: "{autoprograms}\RStudio AI"; Filename: "{app}\Start-RStudio.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\RStudio\rstudio.exe"; Flags: runminimized
-Name: "{autodesktop}\RStudio AI"; Filename: "{app}\Start-RStudio.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\RStudio\rstudio.exe"; Flags: runminimized; Tasks: desktopicon
+Name: "{autoprograms}\{#AppNameValue}"; Filename: "{app}\Start-RStudio.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\RStudio\rstudio.exe"; Flags: runminimized
+Name: "{autodesktop}\{#AppNameValue}"; Filename: "{app}\Start-RStudio.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\RStudio\rstudio.exe"; Flags: runminimized; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\Start-RStudio.cmd"; WorkingDir: "{app}"; Description: "Start RStudio now"; Flags: postinstall nowait skipifsilent runminimized shellexec
