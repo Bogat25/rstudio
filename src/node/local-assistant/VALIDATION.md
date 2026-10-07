@@ -1,5 +1,12 @@
 # Windows implementation and validation, 2026-10-03
 
+Documentation review, 2026-10-07: this is a dated implementation record for the
+independent RStudio AI hard fork. The primary release now uses the per-user Inno
+installer; earlier NSIS limitations below describe that separate inherited route.
+See the later **Custom installation path startup correction, 2026-10-06** section
+for the latest installer/launcher evidence and its test limits. Machine-specific
+diagnostic directories are represented with audit-root placeholders.
+
 Continued the unfinished local Chat provider and the repository handover.
 RGui and the ignored handover files were
 left unchanged. Work is committed locally on `main`; no GitHub writes were made.
@@ -215,11 +222,11 @@ repeated for this launcher correction. No hosted workflow or GitHub write occurr
 
 The existing 0.1.5 installation's launcher was also repaired after verifying
 that it had no custom edits. Its original is retained as
-`D:\rstudio-installer-fix-09f112d2aad91\installed-launcher-original.cmd`.
+`<installer-audit-root>\installed-launcher-original.cmd`.
 The existing installation remained registered after the isolated tests.
 Close its old error dialog and reopen through its shortcut to use the repair.
 
-Evidence is under `D:\rstudio-installer-fix-09f112d2aad91`: `original-launcher.log`,
+Evidence is under `<installer-audit-root>`: `original-launcher.log`,
 `query-probe.jsonl`, `fixed-launcher.log`, `installer-build.log`,
 `rebuilt-runtime.log`, `native-version-tests.log` and `installer-tests.log`.
 The R query diagnostics contain flags, counts and exit status, without R

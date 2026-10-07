@@ -1,5 +1,10 @@
 # Windows build and installer
 
+This guide covers the independent local-AI hard fork. Long-term synchronization
+with upstream RStudio is not planned. See the [README](README.md),
+[documentation index](docs/fork/README.md), and
+[release guide](docs/fork/RELEASING.md) for the fork's scope and release process.
+
 The fork uses the same command workflow as RGui. Open PowerShell in this
 checkout and use `rstudio.cmd` (or `rstudio.ps1`). Source files are synchronized
 to a separate directory without spaces; compilation does not alter your checkout.
@@ -30,13 +35,13 @@ if needed. `fetch` installs the pinned CPU llama.cpp server and Inno Setup 7.1.0
 it does not install Visual Studio, Java or the base RStudio dependencies.
 Those downloads are resumable and checked against SHA-256 before use.
 
-On this workspace the dependencies are in `D:\rstudio-tools` and R is in
-`D:\Program Files\R\R-4.6.1`. The script finds installed R in the registry
-and JDK 17 under Eclipse Adoptium. Override paths when needed:
+Choose a dedicated dependency directory, such as `C:\rstudio-tools`. The script
+finds installed R in the registry and JDK 17 under Eclipse Adoptium. Paths in
+the following command are examples; use your installed R location:
 
 ```powershell
-.\rstudio full -BuildRoot D:\rstudio-build -ToolsRoot D:\rstudio-tools `
-  -RHome 'D:\Program Files\R\R-4.6.1' -Jobs 8
+.\rstudio.cmd full -BuildRoot C:\rstudio-build -ToolsRoot C:\rstudio-tools `
+  -RHome 'C:\Program Files\R\R-4.6.1' -Jobs 8
 ```
 
 The default job limit is eight. The first complete C++/Electron/GWT build takes
@@ -105,8 +110,10 @@ the model downloads.
 Open **Actions > Windows installer > the successful tag run > Artifacts** and
 download `RStudio-AI-<version>-windows-x64`. Extract the ZIP to get the setup
 EXE and its SHA-256 file. Artifacts are retained for 90 days, subject to the
-repository's retention policy. The workflow requires no custom credentials
-and does not create GitHub releases.
+repository's retention policy. A separate job creates a GitHub release with
+the setup EXE and checksum; suffix versions are prereleases. The workflow uses
+GitHub's job token and requires no custom personal access token. See the
+[release guide](docs/fork/RELEASING.md) for tag requirements and publishing limits.
 
 ## Checks and cleanup
 

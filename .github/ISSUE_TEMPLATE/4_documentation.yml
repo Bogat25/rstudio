@@ -2,7 +2,6 @@ name: Documentation request, project tracking, or error reporting
 description: File an issue to suggest documentation additions, changes, deletions, and errors (such as links or inaccurate content)
 title: '[DOC] '
 labels: ["documentation"]
-projects: [rstudio/90]
 body:
   - type: textarea
     id: request-details
@@ -15,7 +14,7 @@ body:
     id: request-doc-version
     attributes:
       label: Documentation version
-      description: If this request is for an existing/released version of the docs, report the version in this format <br>to <version name> <YYYY.MM.patch>
+      description: Include the fork tag or commit, guide filename, and relevant section. Redact personal paths and data.
     validations:
       required: false
   - type: textarea
@@ -51,5 +50,5 @@ body:
       label: Follow-on task
       description: Submit release notes
       options:
-      - label: Update Release Notes
+      - Update Release Notes
     

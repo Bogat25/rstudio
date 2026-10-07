@@ -1,5 +1,12 @@
 # Local R assistant
 
+This is the assistant guide for the independent **RStudio AI hard fork**.
+Local AI is the fork's main goal; long-term upstream synchronization is not
+planned. See the [repository README](../../../README.md),
+[documentation index](../../../docs/fork/README.md), and
+[validation report](VALIDATION.md) for installation, implementation status,
+and known limits. The primary release target is Windows x64 desktop.
+
 Select **Local model (offline)** in Global Options > Assistant or Project
 Options > Assistant. This fork defaults to it. Open or hide Chat with
 **View > Panes > Toggle Chat**, **Ctrl+Shift+T** on Windows/Linux or
@@ -13,12 +20,18 @@ The first opening offers the model and picture reader download, about 3.4 GB,
 once. Download model can resume it later. Stop pauses downloads or cancels an
 answer. Files download to `.part`, resume with HTTP Range and receive their
 final names only after matching the pinned SHA-256. Free space is checked
-first. The model is outside the installation and is never in the installer.
+first. Models live in the selected writable data directory and are never included
+in the installer. With the packaged launcher, that data directory is under `work`.
 
 After downloading, questions, course notes and pictures stay on the computer.
 Both services bind to `127.0.0.1`. The CPU model port defaults to **18713**,
 separate from RGui's 8713. No GPU or additional Node installation is needed.
 The local provider bypasses Posit's update and authentication flow.
+
+This describes the local provider's inference traffic. Model/dependency downloads,
+inherited cloud providers, R packages, and user code have separate network
+behavior. Local files and logs are not encrypted by the application. Review
+attachments before sending and redact logs/screenshots before sharing.
 
 ## Conversation and attachments
 
@@ -46,6 +59,10 @@ in the panel's Edit menu.
 Default writable data is `%LOCALAPPDATA%\RStudio\local-assistant` on Windows
 (RStudio's user data directory elsewhere):
 
+That is the direct-launch default. The fork's packaged `Start-RStudio.cmd`
+selects `work\data\local-assistant` beside the launcher and keeps configuration
+under `work\config`. Use the launcher for bundled R and portable data paths.
+
 ```text
 models/Qwen3.5-4B-Q4_K_M.gguf
 models/Qwen3.5-4B-mmproj-F16.gguf
@@ -68,6 +85,10 @@ At most 12,000 characters are included, ranking shared words of four or more
 characters first. The supplied student/statistics prompt is copied only when
 absent, and remains editable across upgrades.
 
+This is bounded lexical lookup of local files, without embeddings, model training,
+web search, or automatic PDF extraction. Convert a relevant PDF excerpt to text
+or attach a page image. Chat state is in memory rather than a persistent archive.
+
 Advanced `settings.json` keys include `serverExe`, `port`, `startupTimeout`
 (240 seconds), `requestTimeout` (120), `ctxSize` (8192), `maxTokens` (1024),
 `temperature` (0.3), `topP` (0.9) and `contextMaxChars` (12000). Global Options
@@ -79,10 +100,16 @@ set `RSTUDIO_DATA_HOME` at launch to a folder on the stick, and
 `RSTUDIO_CONFIG_HOME` there too for preferences. Use relative model/context
 preferences, for example `../../../assistant-data/models`.
 
-Upgrades preserve data. During an actual uninstall, NSIS removes the two
-default downloaded models and partial files, preserving prompt, settings and
-course notes. Models in custom directories or another Windows user's profile
-need manual removal. Upgrade-triggered uninstall keeps the model cache.
+The primary fork release uses the per-user Inno installer, described in
+[BUILD-WINDOWS.md](../../../BUILD-WINDOWS.md). Upgrades preserve writable `work`
+data. Uninstall removes model/partial and scratch files according to
+[rstudio-ai.iss](../../../package/windows/rstudio-ai.iss), while preserving
+coursework, preferences, and R history. Keep backups of custom material.
+Models in an external custom directory need manual removal.
+
+The inherited NSIS route is separate: its cleanup targets the two default model
+filenames and skips upgrade-triggered removal. Its installer lifecycle has not
+received the same execution coverage as the Inno release; see VALIDATION.md.
 
 ## Proxy and failures
 
@@ -100,11 +127,10 @@ streams and timeouts appear in the status line. Server stdout/stderr is in
 `%TEMP%\rstudio-local-assistant\llama-<backend-pid>.log`; startup failures
 include the last error/failed line and the log path.
 
-The existing NSIS installer supports **Just me** without administrator rights
-under `%LOCALAPPDATA%\Programs\RStudio`, and **All users** under Program Files
-with elevation. Replacing an existing all-users installation can still ask
-for elevation. A ZIP/per-user installation plus a user-installed R avoids
-writing to Program Files. The installer type has not changed.
+The fork's Inno installer includes R and installs for the current user without
+requesting elevation. Choose a writable folder and launch through its shortcut.
+The inherited NSIS installer has separate per-user/all-users modes and may
+request elevation for all-users installation. It is not the primary fork package.
 
 ## Pinned assets and licenses
 
@@ -122,7 +148,7 @@ This package follows RStudio's AGPL license. Runtime MIT notices for ws,
 undici, UTIF and pako are in `dist/THIRD-PARTY-NOTICES.txt`; the CPU bundle
 retains llama.cpp and LLVM OpenMP notices.
 
-## Development on this Windows checkout
+## Component development on Windows
 
 The repository root now has the same build/portable/Inno Setup workflow as the
 RGui fork. Use `.\rstudio doctor`, `.\rstudio full`, `.\rstudio dev` and
@@ -145,27 +171,27 @@ with the pinned build Node and stages bundled output without tests,
 node_modules, source maps or GGUF files. Install the server from a cached ZIP:
 
 ```powershell
-.\scripts\install-llama.ps1 -Archive 'D:\rgui-build\cache\llama-b11153-bin-win-cpu-x64.zip'
+.\scripts\install-llama.ps1 -Archive 'C:\rstudio-build\cache\llama-b11153-bin-win-cpu-x64.zip'
 ```
 
 From the repository root, close the IDE before linking its DLL:
 
 ```powershell
-$env:RSTUDIO_TOOLS_ROOT = 'D:\rstudio-tools'
+$env:RSTUDIO_TOOLS_ROOT = 'C:\rstudio-tools'
 cmd /d /c 'call "src\cpp\tools\windows-dev.cmd" && cmake --build src\build --parallel 8'
 ```
 
 From `src/gwt`:
 
 ```powershell
-$env:RSTUDIO_TOOLS_ROOT = 'D:\rstudio-tools'
+$env:RSTUDIO_TOOLS_ROOT = 'C:\rstudio-tools'
 $env:JAVA_HOME = 'C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot'
-$env:PATH = 'D:\rstudio-tools\dependencies\common\node\22.22.2;D:\rstudio-tools\apache-ant-1.10.14\bin;' + $env:PATH
+$env:PATH = 'C:\rstudio-tools\dependencies\common\node\22.22.2;C:\rstudio-tools\apache-ant-1.10.14\bin;' + $env:PATH
 ant.bat draft
 ```
 
-The Windows helper configures MSVC/CMake/Ninja. Dependencies are under
-`D:\rstudio-tools`; the i18n helper's Python environment is
+The Windows helper configures MSVC/CMake/Ninja. The dependency paths below are
+examples; choose your own ToolsRoot. The i18n helper's Python environment is
 `src/gwt/tools/i18n-helpers/VENV`. Incremental GWT builds take about two minutes;
 Node tests take a few seconds. From `src/node/desktop`, run
 `npm start -- --automation-agent` (omit automation for normal use). The
@@ -174,13 +200,13 @@ development configuration is `src/build/conf/rdesktop-dev.conf`.
 From `e2e/rstudio`, with an empty file at `$env:PW_ENV_FILE`:
 
 ```powershell
-$env:RSTUDIO_TOOLS_ROOT = 'D:\rstudio-tools'
-$env:R_HOME = 'D:\Program Files\R\R-4.6.1'
+$env:RSTUDIO_TOOLS_ROOT = 'C:\rstudio-tools'
+$env:R_HOME = 'C:\Program Files\R\R-4.6.1'
 $env:RSTUDIO_CPP_BUILD_OUTPUT = (Resolve-Path '..\..\src\build').Path
 $env:PW_SANDBOX_NO_SEED_CREDENTIALS = '1'
 $env:PW_TRACE = 'off'
 $env:PW_RSTUDIO_R_LIBS_SKIP_PREP = '1'
-$env:PATH = 'D:\rstudio-tools\dependencies\common\node\24.21.0-installed;' + $env:R_HOME + '\bin\x64;' + $env:PATH
+$env:PATH = 'C:\rstudio-tools\dependencies\common\node\24.21.0-installed;' + $env:R_HOME + '\bin\x64;' + $env:PATH
 npm run test:desktop-dev -- tests/panes/local-assistant tests/preferences/assistant_provider_switch.test.ts --no-deps --workers=1 --retries=0
 ```
 
