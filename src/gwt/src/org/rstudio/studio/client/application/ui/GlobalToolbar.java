@@ -21,19 +21,13 @@ import org.rstudio.core.client.theme.res.ThemeResources;
 import org.rstudio.core.client.widget.CanFocus;
 import org.rstudio.core.client.widget.FocusContext;
 import org.rstudio.core.client.widget.FocusHelper;
-import org.rstudio.core.client.widget.LatchingToolbarButton;
 import org.rstudio.core.client.widget.Toolbar;
 import org.rstudio.core.client.widget.ToolbarButton;
 import org.rstudio.core.client.widget.ToolbarMenuButton;
 import org.rstudio.core.client.widget.ToolbarPopupMenu;
 import org.rstudio.studio.client.application.StudioClientApplicationConstants;
 import org.rstudio.studio.client.application.events.EventBus;
-import org.rstudio.studio.client.application.events.ThemeChangedEvent;
 
-import com.google.gwt.dom.client.NativeEvent;
-import com.google.gwt.event.dom.client.ContextMenuEvent;
-import com.google.gwt.event.dom.client.MouseDownEvent;
-import com.google.gwt.user.client.ui.MenuItem;
 import org.rstudio.studio.client.application.ui.addins.AddinsToolbarButton;
 import org.rstudio.studio.client.common.icons.StandardIcons;
 import org.rstudio.studio.client.common.vcs.VCSConstants;
@@ -43,12 +37,9 @@ import org.rstudio.studio.client.workbench.commands.Commands;
 import org.rstudio.studio.client.workbench.model.SessionInfo;
 import org.rstudio.studio.client.workbench.prefs.model.UserPrefs;
 import org.rstudio.studio.client.workbench.views.chat.PaiUtil;
-import org.rstudio.studio.client.projects.ui.prefs.events.ProjectOptionsChangedEvent;
-import org.rstudio.studio.client.workbench.views.chat.events.ChatPaneActiveEvent;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.dom.client.Document;
 import com.google.gwt.resources.client.ImageResource;
 import com.google.gwt.user.client.ui.Widget;
 import com.google.inject.Provider;
@@ -70,7 +61,6 @@ public class GlobalToolbar extends Toolbar
       pCodeSearch_ = pCodeSearch;
       userPrefs_ = userPrefs;
       trustPresenter_ = trustPresenter;
-      paiUtil_ = paiUtil;
       ThemeResources res = ThemeResources.INSTANCE;
       addStyleName(res.themeStyles().globalToolbar());
 
@@ -274,80 +264,6 @@ public class GlobalToolbar extends Toolbar
       // Keep button in sync with Sidebar location and visibility
       userPrefs_.panes().addValueChangeHandler(evt -> updateSidebarToggleButton());
 
-      // assistant toggle button (right side of toolbar)
-      if (sessionInfo.getPositAssistantEnabled())
-      {
-         boolean isDark = Document.get().getBody().hasClassName("rstudio-themes-dark-menus");
-         assistantButton_ = new LatchingToolbarButton(
-               "Posit Assistant",
-               constants_.positAssistantTitle(),
-               false,
-               "assistantToggle",
-               isDark
-                  ? new ImageResource2x(StandardIcons.INSTANCE.iconAssistantToolbarDark2x())
-                  : new ImageResource2x(StandardIcons.INSTANCE.iconAssistantToolbar2x()),
-               event -> commands_.assistantPaneToggle().execute());
-         assistantButton_.addStyleName(
-               ThemeResources.INSTANCE.themeStyles().assistantToggleButton());
-         ElementIds.assignElementId(assistantButton_, ElementIds.ASSISTANT_TOGGLE_BUTTON);
-         addRightWidget(assistantButton_);
-         Widget sep = Toolbar.getSeparator();
-         sep.addStyleName(ThemeResources.INSTANCE.themeStyles().toolbarSeparator());
-         assistantSeparator_ = addRightWidget(sep);
-
-         // Track command visibility to show/hide the button dynamically
-         commands_.assistantPaneToggle().addVisibleChangedHandler(event ->
-               updateAssistantButtonVisibility());
-
-         // Hide/show when the preference changes
-         userPrefs_.assistantToolbarButtonVisible().addValueChangeHandler(event ->
-               updateAssistantButtonVisibility());
-         userPrefs_.chatProvider().addValueChangeHandler(event -> updateAssistantButtonVisibility());
-         eventBus_.addHandler(ProjectOptionsChangedEvent.TYPE, event -> {
-            paiUtil_.updateProjectOptions(event.getData().getAssistantOptions());
-            updateAssistantButtonVisibility();
-         });
-
-         // Sync initial state: PaneManager may have already set the command
-         // invisible before this handler was registered (see #17368)
-         updateAssistantButtonVisibility();
-
-         eventBus_.addHandler(ChatPaneActiveEvent.TYPE, event ->
-               assistantButton_.setLatched(event.isActive()));
-
-         eventBus_.addHandler(ThemeChangedEvent.TYPE, event ->
-               updateAssistantButtonIcon());
-
-         // Prevent non-primary clicks from activating the button
-         assistantButton_.addDomHandler(mouseDownEvent ->
-         {
-            if (mouseDownEvent.getNativeButton() != NativeEvent.BUTTON_LEFT)
-            {
-               mouseDownEvent.preventDefault();
-               mouseDownEvent.stopPropagation();
-            }
-         }, MouseDownEvent.getType());
-
-         // Right-click context menu to hide the button
-         assistantButton_.addDomHandler(contextMenuEvent ->
-         {
-            contextMenuEvent.preventDefault();
-            contextMenuEvent.stopPropagation();
-            ToolbarPopupMenu menu = new ToolbarPopupMenu();
-            menu.addItem(new MenuItem(
-                  constants_.hidePositAssistantButton(),
-                  () ->
-                  {
-                     userPrefs_.assistantToolbarButtonVisible().setGlobalValue(false);
-                     userPrefs_.writeUserPrefs(completed -> {});
-                  }));
-            menu.showRelativeTo(
-                  contextMenuEvent.getNativeEvent().getClientX(),
-                  contextMenuEvent.getNativeEvent().getClientY(),
-                  ElementIds.ASSISTANT_TOGGLE_BUTTON + "_context");
-         }, ContextMenuEvent.getType());
-      }
-
       // restricted mode indicator (managed by TrustPresenter)
       trustPresenter_.initializeForSession(sessionInfo);
       addRightWidget(trustPresenter_.getRestrictedModeIcon());
@@ -365,6 +281,9 @@ public class GlobalToolbar extends Toolbar
    {
       if (sidebarToggleButton_ != null)
       {
+         // A sidebar containing only Chat is controlled by its shortcut.
+         com.google.gwt.core.client.JsArrayString tabs = userPrefs_.panes().getValue().getSidebar();
+         sidebarToggleButton_.setVisible(tabs.length() != 1 || !"Chat".equals(tabs.get(0)));
          boolean sidebarVisible = userPrefs_.panes().getValue().getSidebarVisible();
          boolean sidebarLocationRight = userPrefs_.panes().getValue().getSidebarLocation().equals("right");
          sidebarToggleButton_.setTitle(sidebarVisible ? constants_.hideSidebarTitle() : constants_.showSidebarTitle());
@@ -385,30 +304,6 @@ public class GlobalToolbar extends Toolbar
          return isVisible
             ? new ImageResource2x(StandardIcons.INSTANCE.toggleSidebarLeftVisible2x())
             : new ImageResource2x(StandardIcons.INSTANCE.toggleSidebarLeftHidden2x());
-      }
-   }
-
-   private void updateAssistantButtonVisibility()
-   {
-      if (assistantButton_ != null)
-      {
-         boolean visible = commands_.assistantPaneToggle().isVisible() &&
-                           paiUtil_.isChatProviderPosit() &&
-                           userPrefs_.assistantToolbarButtonVisible().getValue();
-         assistantButton_.setVisible(visible);
-         assistantSeparator_.setVisible(visible);
-      }
-   }
-
-   private void updateAssistantButtonIcon()
-   {
-      if (assistantButton_ != null)
-      {
-         boolean isDark = Document.get().getBody().hasClassName("rstudio-themes-dark-menus");
-         ImageResource icon = isDark
-            ? new ImageResource2x(StandardIcons.INSTANCE.iconAssistantToolbarDark2x())
-            : new ImageResource2x(StandardIcons.INSTANCE.iconAssistantToolbar2x());
-         assistantButton_.setLeftImage(icon);
       }
    }
 
@@ -440,10 +335,7 @@ public class GlobalToolbar extends Toolbar
    private final Provider<CodeSearch> pCodeSearch_;
    private final Widget searchWidget_;
    private final UserPrefs userPrefs_;
-   private final PaiUtil paiUtil_;
    private final FocusContext codeSearchFocusContext_ = new FocusContext();
    private ToolbarButton sidebarToggleButton_;
-   private LatchingToolbarButton assistantButton_;
-   private Widget assistantSeparator_;
    private static final StudioClientApplicationConstants constants_ = GWT.create(StudioClientApplicationConstants.class);
 }

@@ -1,6 +1,6 @@
-# RStudio AI
+# RStudio
 
-**RStudio Desktop with a local AI assistant for R, statistics, plots, and your own reference notes.**
+**An RStudio Desktop fork with a local assistant for R, statistics, plots, and your own reference notes.**
 
 This repository is an independent **hard fork** of RStudio. Local AI is the main
 development goal. Long-term synchronization with the original repository is not
@@ -11,7 +11,8 @@ are preserved.
 ## Local AI in the workbench
 
 - Stream answers in the native Chat pane while the editor and R console remain
-  available. Hide/show the pane or pop it out without losing the conversation.
+  available. Press **Ctrl+Shift+T** to show or hide it without losing the conversation.
+  It starts hidden on every launch and has no toolbar button or menu entry.
 - Ask about your current unsaved script, console output, the last error, a plot,
   picture files, or clipboard images through explicit attachments.
 - Search local course/reference notes using bounded keyword-ranked excerpts.
@@ -29,17 +30,22 @@ cloud integrations remain separate optional providers with their own data flows.
 
 ## Install and start
 
-1. Choose `RStudio-AI-<version>-setup.exe` and its SHA-256 file from a successful
+1. Choose `RStudio-<version>-setup.exe` and its SHA-256 file from a successful
    version-tag release in this repository, when available.
 2. Run the installer and choose a writable destination. It installs for the
    current user without requesting administrator permissions. Packages are unsigned.
-3. Launch **RStudio AI** through its shortcut. Portable copies use
+3. Launch **RStudio** through its shortcut. Portable copies use
    `Start-RStudio.cmd` beside the `RStudio` and `R` directories. Use this launcher
    to select bundled R and the intended data folders.
-4. Open Chat with **Ctrl+Shift+T** or **View > Panes > Toggle Chat**. In
+4. Open or close Chat with **Ctrl+Shift+T**. In
    **Global Options > Assistant**, select **Local model (offline)** if needed.
 5. Accept the initial base-model and picture-reader download (about **3.4 GB**).
    Ask a question with **Send** or **Ctrl+Enter**.
+
+The product name is **RStudio**, without an AI suffix. Existing installations keep
+their upgrade identity and data; internal `RStudio` directories and
+`Start-RStudio.cmd` remain compatible. Assistant access is through the keyboard
+shortcut only (Cmd+Shift+T on macOS), including while the question box has focus.
 
 Windows 11 x64 is the validated packaging target. The inherited source tree also
 contains Linux, macOS, and Server code; those configurations have not been

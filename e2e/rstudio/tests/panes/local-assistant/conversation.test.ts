@@ -51,7 +51,8 @@ test.describe('Local assistant conversation', { tag: ['@chat', '@desktop_only'] 
       await setPref(page, 'local_assistant_threads', 4);
     }
     await setPref(page, 'chat_provider', 'local');
-    await executeCommand(page, 'activateChat');
+    await expect(page.locator("iframe[title='Posit Assistant']")).not.toBeVisible();
+    await page.keyboard.press('Control+Shift+T');
     await expect(page.frameLocator("iframe[title='Posit Assistant']").locator('#send')).toBeEnabled();
   });
   test.afterEach(async ({ rstudioPage: page }) => {
@@ -210,7 +211,7 @@ test.describe('Local assistant conversation', { tag: ['@chat', '@desktop_only'] 
     await expect(frame.locator('#offer-text')).toContainText('3.4 GB'); await frame.locator('#offer-no').click();
     const stopped = page.waitForResponse(response => /\/rpc\/chat_stop_backend(?:\?|$)/.test(response.url()));
     await setPref(page, 'chat_provider', 'none'); await stopped; await setPref(page, 'chat_provider', 'local');
-    await executeCommand(page, 'activateChat');
+    await page.keyboard.press('Control+Shift+T');
     await expect(frame.locator('#status')).toContainText('The local model is missing. Use Download model');
     await expect(frame.locator('#download-offer')).not.toBeVisible();
   });

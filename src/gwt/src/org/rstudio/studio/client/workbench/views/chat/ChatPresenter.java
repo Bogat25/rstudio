@@ -413,18 +413,12 @@ public class ChatPresenter extends BasePresenter
          {
             if (value != null)
             {
-               poppedOut_ = Boolean.TRUE.equals(value.getBoolean("poppedOut"));
+               // A previous pop-out must not reopen the assistant on startup.
+               poppedOut_ = false;
+               stateDirty_ = Boolean.TRUE.equals(value.getBoolean("poppedOut"));
                if (value.hasKey("geometry"))
                   savedGeometry_ = value.getObject("geometry").cast();
 
-               // Eagerly start the backend when popped out — the normal
-               // trigger (the onPaneReady callback) won't fire if the
-               // sidebar is hidden.
-               if (poppedOut_)
-               {
-                  commands_.popOutChat().setEnabled(false);
-                  Scheduler.get().scheduleDeferred(() -> initializeChat());
-               }
             }
          }
 
@@ -885,6 +879,8 @@ public class ChatPresenter extends BasePresenter
    // presenter is delay-loaded (e.g. sidebar hidden at startup).
    void onActivateChat()
    {
+      if (!paneManager_.isChatPaneRequested())
+         return;
       if (poppedOut_)
       {
          satelliteManager_.activateSatelliteWindow(ChatSatellite.NAME);
@@ -899,32 +895,7 @@ public class ChatPresenter extends BasePresenter
    // presenter is delay-loaded.
    void onAssistantPaneToggle()
    {
-      if (paiUtil_.isChatProviderLocal())
-      {
-         if (poppedOut_)
-            returnChatToMain();
-         if (!paneManager_.hideChatIfVisible())
-            paneManager_.activateTab(PaneManager.Tab.Chat);
-         return;
-      }
-      if (poppedOut_)
-      {
-         satelliteManager_.activateSatelliteWindow(ChatSatellite.NAME);
-      }
-      else if (paneManager_.isChatActivatedInSidebar())
-      {
-         // Chat is visible and selected in the sidebar — dismiss it.
-         // Call PaneManager directly rather than executing the toggleSidebar
-         // command, to avoid GWT $entry() re-entrancy when this method runs
-         // inside a delay-load callback (causes Firefox assertion errors).
-         paneManager_.setSidebarPref(false);
-      }
-      else
-      {
-         // Chat is not active — activate/focus it (works for sidebar,
-         // quadrant, and hidden tab set cases).
-         paneManager_.activateTab(PaneManager.Tab.Chat);
-      }
+      paneManager_.toggleChatPane();
    }
 
    private static final Size DEFAULT_SATELLITE_SIZE = new Size(500, 700);

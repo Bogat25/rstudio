@@ -1,10 +1,11 @@
 # Windows implementation and validation, 2026-10-03
 
 Documentation review, 2026-10-07: this is a dated implementation record for the
-independent RStudio AI hard fork. The primary release now uses the per-user Inno
-installer; earlier NSIS limitations below describe that separate inherited route.
+independent RStudio hard fork (formerly packaged as RStudio AI). The primary
+release now uses the per-user Inno installer; earlier NSIS limitations below describe that separate inherited route.
 See the later **Custom installation path startup correction, 2026-10-06** section
-for the latest installer/launcher evidence and its test limits. Machine-specific
+for the launcher correction; **RStudio branding and shortcut-only access,
+2026-10-09** records the current build and installer evidence. Machine-specific
 diagnostic directories are represented with audit-root placeholders.
 
 Continued the unfinished local Chat provider and the repository handover.
@@ -236,3 +237,53 @@ diagnostic hooks.
 Local installer: `D:\rstudio-build\installer\RStudio-AI-0.1.6-setup.exe`
 (710,412,617 bytes), with an adjacent checksum file. SHA-256:
 `32203299ea4438fc0b8921a60a470151d3c2ab55af0837abb72fa7cd483f85ef`.
+
+
+## RStudio branding and shortcut-only access, 2026-10-09
+
+The product is named **RStudio**, with no AI suffix. The installer, Windows
+shortcuts, portable archive, deployment folder and tag-workflow artifact/release
+names use that spelling. Internal executable/directory names and the existing
+fork AppId remain stable so upgrades retain their installation and data.
+In-place upgrades remove the old fork's named shortcuts only when its existing
+HKCU registration matches the installation directory; a separate test identity
+does not touch an existing user installation.
+
+Chat always starts closed, including with saved visible-sidebar or popped-out
+state. PaneManager excludes it from tab sets until the keyboard toggle requests
+it. Ctrl+Shift+T (Cmd+Shift+T on macOS) opens/closes it, including from the local
+client's question box. Conversation history survives hiding/reopening. Assistant
+opening entries were removed from menus, toolbars and the command palette;
+legacy toolbar preferences cannot restore a button. The presentation change
+applies to both chat providers. The local provider's defaults and capabilities
+remain available through Assistant preferences.
+
+Local Windows 11 validation:
+
+| Check | Result |
+| --- | --- |
+| Optimized GWT/C++/Electron desktop and Inno installer | Passed; installer and desktop product metadata are RStudio |
+| Assistant TypeScript and protocol suite | 21 passed; optional real-model test skipped |
+| Desktop and end-to-end TypeScript checking | Passed |
+| Workflow helper checks and actionlint | 9 helper checks passed; workflow syntax passed |
+| Actual packaged launcher after relocation | Passed: RStudio title, bundled R execution, writable temp files, initially hidden Chat despite saved layout/pop-out, no toggle buttons, repeated keyboard toggles |
+| Native desktop Playwright suites | 11 passed; 1 optional real-model test skipped, covering conversations/images/editor actions, shortcut-only access, command palette and provider switching |
+| Isolated install/upgrade/uninstall | 25 checks passed, plus installed GUI checks; custom path with spaces, HKCU registration, metadata, model exclusion, user-file preservation and cleanup |
+| Installer checksum, Node/PowerShell syntax, whitespace and documentation links | Passed |
+
+The installer test caller was unelevated. The packaged and installed tests use
+the actual launcher without test-supplied R discovery paths. The existing user
+installation was not upgraded or uninstalled. Supervisor failure tests now use
+owned loopback fixture endpoints and empty model folders so an already-running
+IDE or cached model cannot change their result.
+
+Current local artifact: `<BuildRoot>/installer/RStudio-0.1.6-setup.exe`, with an
+adjacent SHA-256 file. Earlier artifact names/checksums in this document describe
+older builds. No model weights are included.
+
+Real CPU inference, the full native session suite, non-Windows platforms and a
+production-AppId upgrade from the old product name were not rerun in this pass.
+The isolated upgrade test verifies preservation under a unique test identity;
+legacy-name shortcut cleanup remains checked by source review and compilation.
+Existing R locale warnings remain separate from IDE startup. No hosted workflow
+was triggered and nothing was written to GitHub.

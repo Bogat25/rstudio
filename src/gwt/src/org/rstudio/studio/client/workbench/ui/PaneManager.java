@@ -366,6 +366,18 @@ public class PaneManager
       source_.load();
 
       PaneConfig config = validateConfig(userPrefs.panes().getValue().cast());
+      // Assistant visibility is session-only. A saved layout must never open it
+      // before the user presses its shortcut (including older sidebar layouts).
+      if (config.getSidebarVisible() && config.getSidebar().length() == 1 &&
+          CHAT_PANE.equals(config.getSidebar().get(0)))
+      {
+         config = PaneConfig.create(config.getQuadrants(), config.getTabSet1(),
+               config.getTabSet2(), config.getHiddenTabSet(),
+               config.getConsoleLeftOnTop(), config.getConsoleRightOnTop(),
+               config.getAdditionalSourceColumns(), config.getSidebar(), false,
+               config.getSidebarLocation());
+         userPrefs.panes().setGlobalValue(config);
+      }
       initPanes(config);
       previousPaneConfig_ = config;
 
@@ -617,7 +629,7 @@ public class PaneManager
       });
 
       // Re-evaluate chat command visibility when the chat provider changes
-      chatTabsEnabled_ = paiUtil_.isChatEnabled();
+      chatTabsEnabled_ = false;
       eventBus.addHandler(ProjectOptionsChangedEvent.TYPE, event ->
       {
          paiUtil_.updateProjectOptions(event.getData().getAssistantOptions());
@@ -2139,7 +2151,7 @@ public class PaneManager
          for (int j = 0; j < tabNames.length(); j++)
          {
             Tab tab = Enum.valueOf(Tab.class, tabNames.get(j));
-            if (tab == Tab.Chat && !paiUtil_.isChatEnabled())
+            if (tab == Tab.Chat && (!paiUtil_.isChatEnabled() || !chatPaneRequested_))
                continue;
             tabList.add(tab);
          }
@@ -2220,7 +2232,7 @@ public class PaneManager
       tabs.add(presentation2Tab_);
       tabs.add(environmentTab_);
       tabs.add(viewerTab_);
-      if (paiUtil_.isChatEnabled())
+      if (paiUtil_.isChatEnabled() && chatPaneRequested_)
          tabs.add(chatTab_);
       tabs.add(connectionsTab_);
       tabs.add(jobsTab_);
@@ -2655,6 +2667,25 @@ public class PaneManager
       return true;
    }
 
+   public boolean isChatPaneRequested()
+   {
+      return chatPaneRequested_;
+   }
+
+   public void toggleChatPane()
+   {
+      if (!paiUtil_.isChatEnabled())
+         return;
+      if (chatPaneRequested_)
+         hideChatIfVisible();
+      chatPaneRequested_ = !chatPaneRequested_;
+      refreshChatTabs();
+      if (chatPaneRequested_)
+         activateTab(Tab.Chat);
+      else
+         commands_.activateConsole().execute();
+   }
+
    /**
     * Returns true when the Chat pane is visible in the sidebar and is the
     * selected tab -- i.e., when a second click on the Assistant toolbar
@@ -2917,7 +2948,8 @@ public class PaneManager
       boolean isSidebar = StringUtil.equals(persisterName, UserPrefsAccessor.Panes.QUADRANTS_SIDEBAR);
       boolean showMaximizeButton = true;  // All tabsets get maximize button
       boolean showMinimizeButton = !isSidebar;  // Sidebar doesn't get minimize button
-      final WindowFrame frame = new WindowFrame(persisterName, persisterName, showMaximizeButton, showMinimizeButton, isSidebar);
+      boolean assistantOnly = isSidebar && tabs.size() == 1 && tabs.contains(Tab.Chat);
+      final WindowFrame frame = new WindowFrame(persisterName, persisterName, showMaximizeButton, showMinimizeButton, isSidebar && !assistantOnly);
       final MinimizedModuleTabLayoutPanel minimized = new MinimizedModuleTabLayoutPanel(persisterName);
       final LogicalWindow logicalWindow = new LogicalWindow(frame, minimized);
 
@@ -3206,7 +3238,9 @@ public class PaneManager
 
    private void refreshChatTabs()
    {
-      boolean enabled = paiUtil_.isChatEnabled();
+      if (!paiUtil_.isChatEnabled())
+         chatPaneRequested_ = false;
+      boolean enabled = paiUtil_.isChatEnabled() && chatPaneRequested_;
       if (enabled != chatTabsEnabled_)
       {
          chatTabsEnabled_ = enabled;
@@ -3244,32 +3278,21 @@ public class PaneManager
    private void manageChatCommands()
    {
       boolean paiEnabled = paiUtil_.isChatEnabled();
-      boolean showPaiUi = paiEnabled && !isTabHidden(Tab.Chat);
-      commands_.activateChat().setVisible(showPaiUi);
-      commands_.layoutZoomChat().setVisible(showPaiUi);
-      commands_.assistantPaneToggle().setVisible(
-            showPaiUi && !paiUtil_.isChatProviderNone());
+      // Keep the shortcut enabled even while its tab is absent. AppCommand
+      // treats an invisible command as disabled for keyboard dispatch.
+      commands_.activateChat().setVisible(false);
+      commands_.layoutZoomChat().setVisible(false);
+      commands_.assistantPaneToggle().setVisible(paiEnabled);
 
-      // Both providers share the pane and satellite window.
-      commands_.popOutChat().setVisible(paiEnabled);
-      commands_.returnChatToMain().setVisible(paiEnabled);
+      // Opening controls are intentionally absent for both chat providers.
+      commands_.popOutChat().setVisible(false);
+      commands_.returnChatToMain().setVisible(false);
 
       // Administrator-managed installation hides the update check: the
       // backend refuses it, and any leftover user-level copy is inert.
       boolean installEnabled = paiUtil_.isPositAssistantInstallationEnabled();
       commands_.checkForPositAssistantUpdates().setVisible(
             paiUtil_.isPositAssistantEnabled() && installEnabled && paiUtil_.isPositAssistantWanted());
-   }
-
-   private boolean isTabHidden(Tab tab)
-   {
-      WorkbenchTabPanel panel = getOwnerTabPanel(tab);
-      if (panel == null)
-         return true;
-      LogicalWindow parent = panel.getParentWindow();
-      if (parent == null)
-         return true;
-      return parent == panesByName_.get(UserPrefsAccessor.Panes.QUADRANTS_HIDDENTABSET);
    }
 
    private List<AppCommand> getLayoutCommands()
@@ -3380,6 +3403,7 @@ public class PaneManager
    private Widget sidebar_;
    private PaneConfig previousPaneConfig_;
    private boolean chatTabsEnabled_;
+   private boolean chatPaneRequested_ = false;
 
    // Zoom-related members ----
    private Tab lastSelectedTab_ = null;

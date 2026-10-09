@@ -1,5 +1,13 @@
 # Local assistant architecture
 
+The product name is **RStudio**. Internal executable names, directories, session
+protocols, and preference keys retain their RStudio names for compatibility.
+Assistant visibility is session-only: PaneManager excludes Chat from every tab
+set until the toggle shortcut requests it, and removes it again when closed.
+Saved sidebar visibility and satellite state cannot reopen it on startup. The
+toggle command remains enabled for keyboard dispatch but has no menu, toolbar,
+or command-palette control. This behavior applies to both chat providers.
+
 ## Request flow
 
 The existing RStudio Chat surface hosts a bundled local provider. The R session

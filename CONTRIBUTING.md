@@ -1,4 +1,4 @@
-# Contributing to RStudio AI
+# Contributing to RStudio
 
 This is an independent hard fork focused on local AI in the RStudio workbench.
 Long-term upstream synchronization is not planned. This repository's maintainer

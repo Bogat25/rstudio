@@ -14,7 +14,6 @@ package org.rstudio.studio.client.workbench.views.chat;
 
 import org.rstudio.core.client.command.CommandBinder;
 import org.rstudio.core.client.command.Handler;
-import org.rstudio.core.client.js.JsObject;
 import org.rstudio.studio.client.workbench.commands.Commands;
 import org.rstudio.studio.client.workbench.model.Session;
 import org.rstudio.studio.client.workbench.ui.DelayLoadTabShim;
@@ -46,21 +45,8 @@ public class ChatTab extends DelayLoadWorkbenchTab<ChatPresenter>
 
       binder.bind(commands, shim_);
 
-      // If chat was popped out in a previous session, force-load the
-      // presenter eagerly so it can restore the satellite window even
-      // when the sidebar is hidden (bypassing DelayLoad deferral).
-      session.withSessionInfo(info ->
-      {
-         JsObject group = info.getClientState().peek("chat-window");
-         if (group != null)
-         {
-            JsObject state = group.getObject("chatSatelliteState");
-            if (state != null && Boolean.TRUE.equals(state.getBoolean("poppedOut")))
-            {
-               shim_.forceLoad(false, null);
-            }
-         }
-      });
+      // Load only when invoked by the keyboard shortcut. Saved satellite state
+      // deliberately does not restore a window or start the assistant.
    }
 
    private final Shim shim_;

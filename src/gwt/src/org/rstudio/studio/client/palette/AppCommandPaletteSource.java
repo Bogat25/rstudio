@@ -83,6 +83,8 @@ public class AppCommandPaletteSource implements CommandPaletteEntryProvider
       // Add each command from the sorted list to the palette
       for (String id: sorted)
       {
+         if ("assistantPaneToggle".equals(id))
+            continue;
          if ((id.contains("Mru") || id.startsWith("mru") || id.contains("Dummy")) &&
               !id.contains("Palette"))
          {
@@ -122,6 +124,9 @@ public class AppCommandPaletteSource implements CommandPaletteEntryProvider
       {
          return null;
       }
+
+      if ("assistantPaneToggle".equals(id))
+         return null;
 
       AppCommand command = commands_.getCommandById(id);
       if (command == null)

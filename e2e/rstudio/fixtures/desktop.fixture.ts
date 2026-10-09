@@ -93,11 +93,12 @@ function readPrefsFile(filePath: string, sourceLabel: string): Record<string, un
 }
 
 // Constants
-export const RSTUDIO_PATH = process.platform === 'win32'
+// Allow tests to exercise an isolated fork package without replacing an IDE.
+export const RSTUDIO_PATH = process.env.PW_RSTUDIO_BIN ?? (process.platform === 'win32'
   ? 'C:\\Program Files\\RStudio\\rstudio.exe'
   : process.platform === 'darwin'
     ? '/Applications/RStudio.app/Contents/MacOS/RStudio'
-    : '/usr/bin/rstudio';
+    : '/usr/bin/rstudio');
 // Deterministic per-worker CDP port: each parallel worker gets its own fixed
 // port (base + checkout offset + parallel index) so concurrent workers never
 // collide. A random port would, with a handful of workers, occasionally have

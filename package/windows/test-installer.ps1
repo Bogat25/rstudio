@@ -5,10 +5,10 @@ $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 . (Join-Path $root 'rstudio.ps1') -BuildRoot $BuildRoot
 Initialize-Toolchain
 Require-BuildTools
-$setups = @(Get-ChildItem -LiteralPath $InstallerDir -Filter 'RStudio-AI-*-setup.exe' | Sort-Object LastWriteTimeUtc -Descending)
+$setups = @(Get-ChildItem -LiteralPath $InstallerDir -Filter 'RStudio-*-setup.exe' | Sort-Object LastWriteTimeUtc -Descending)
 if (-not $setups.Count) { throw 'Build an installer first with .\rstudio installer.' }
 $production = $setups[0]
-$versionText = $production.BaseName.Substring('RStudio-AI-'.Length)
+$versionText = $production.BaseName.Substring('RStudio-'.Length)
 $versionText = $versionText.Substring(0,$versionText.Length - '-setup'.Length)
 $script:Version = $versionText
 $versionInfo = Resolve-Version
@@ -24,11 +24,11 @@ $elevated = [Security.Principal.WindowsPrincipal]::new([Security.Principal.Windo
     [Security.Principal.WindowsBuiltInRole]::Administrator)
 Write-Host "Installer test caller elevated: $elevated"
 # Use the production payload and packaging source with a separate identity.
-# An installed RStudio AI and its registration are never replaced or removed.
+# An installed RStudio and its registration are never replaced or removed.
 Invoke-Logged $compiler @("/DAppVersion=$versionText","/DNumericVersion=$($versionInfo.Numeric)",
-    "/DAppIdValue={{$identifier}","/DAppNameValue=RStudio AI Test $identifier",
+    "/DAppIdValue={{$identifier}","/DAppNameValue=RStudio Test $identifier",
     "/DStageDir=$Stage","/DOutputDir=$test",(Join-Path $root 'package\windows\rstudio-ai.iss')) $root 'installer-fixture'
-$setup = Join-Path $test ("RStudio-AI-$versionText-setup.exe")
+$setup = Join-Path $test ("RStudio-$versionText-setup.exe")
 $passed = 0
 function Check([string]$Name, [bool]$Condition) {
     if (-not $Condition) { throw "FAILED $Name" }
@@ -46,6 +46,9 @@ try {
     Test-Runtime $app
     Check 'runtime installs into a path containing spaces' $true
     Check 'per-user uninstall registration' (Test-Path -LiteralPath $registry)
+    Check 'installed product uses the RStudio name' ((Get-ItemProperty -LiteralPath $registry -Name DisplayName).DisplayName -like 'RStudio Test *')
+    Check 'installer product metadata uses the RStudio name' ((Get-Item -LiteralPath $setup).VersionInfo.ProductName -like 'RStudio Test *')
+    Check 'desktop executable product metadata uses the RStudio name' ((Get-Item -LiteralPath (Join-Path $app 'RStudio\rstudio.exe')).VersionInfo.ProductName -eq 'RStudio')
     Check 'models excluded from installation' (@(Get-ChildItem -LiteralPath $app -Recurse -File -Filter '*.gguf*').Count -eq 0)
     Invoke-Logged $Node @((Join-Path $root 'package\windows\test-runtime.cjs'),$app,$BuildRoot,'--installed-runtime') $root 'installed-runtime-test'
     Check 'installed launcher opens the IDE, bundled R, usable temp space and offline Chat' $true

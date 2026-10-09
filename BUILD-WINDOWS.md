@@ -54,8 +54,8 @@ Only processes belonging to this build root are stopped before relinking.
 | --- | --- |
 | `full`, `quick` | `build` and synchronized `tree` |
 | `fetch` | verified `cache`, per-user compiler in `tools` |
-| `package` | `dist`, `RStudio-AI-portable.zip` and `.sha256` |
-| `installer -Version 0.1.0` | `installer\RStudio-AI-0.1.0-setup.exe` and `.sha256` |
+| `package` | `dist`, `RStudio-portable.zip` and `.sha256` |
+| `installer -Version 0.1.0` | `installer\RStudio-0.1.0-setup.exe` and `.sha256` |
 | `test` | test output under `logs` |
 
 The portable layout contains `RStudio`, a copied `R` runtime with its licenses,
@@ -64,7 +64,7 @@ keeps preferences, session data, R packages and coursework
 under `work` beside the launcher. Paths follow the launcher when the drive
 letter changes. R's temporary directory must have a path without spaces.
 The launcher uses `work\tmp` or its Windows short path when suitable; otherwise
-it uses an `RStudio-AI` folder under a writable user temp location. This also
+it uses an `RStudio` folder under a writable user temp location. This also
 supports custom installation folders on drives without 8.3 short names.
 Open Chat with **Ctrl+Shift+T**.
 Course reference files go in `work\data\local-assistant\context`; the editable
@@ -81,7 +81,7 @@ model download when needed. An installer always excludes GGUF files.
 .\rstudio deploy -Drive E:
 ```
 
-Deployment creates `E:\RStudio-AI` and updates only its program directories.
+Deployment creates `E:\RStudio` and updates only its program directories.
 It preserves existing work, preferences, prompts and downloads. It refuses the
 Windows system drive or an existing target lacking its deployment marker.
 
@@ -108,7 +108,7 @@ installation, upgrades and removal. The installer includes R 4.6.1 and excludes
 the model downloads.
 
 Open **Actions > Windows installer > the successful tag run > Artifacts** and
-download `RStudio-AI-<version>-windows-x64`. Extract the ZIP to get the setup
+download `RStudio-<version>-windows-x64`. Extract the ZIP to get the setup
 EXE and its SHA-256 file. Artifacts are retained for 90 days, subject to the
 repository's retention policy. A separate job creates a GitHub release with
 the setup EXE and checksum; suffix versions are prereleases. The workflow uses
@@ -136,7 +136,7 @@ disable the Node inspector.
 `test -Installer` additionally installs into a temporary folder containing
 spaces, starts its shipped launcher, checks bundled R and temp-file creation,
 upgrades, verifies preservation, then uninstalls. It compiles the same payload
-with a unique test application ID and name, so an existing RStudio AI is left
+with a unique test application ID and name, so an existing RStudio is left
 in place. GUI checks use the existing Playwright dependencies mentioned above.
 `clean` removes generated build and staging trees but keeps
 downloads, compiler tools, installers and portable work.

@@ -15,7 +15,7 @@
   #define AppIdValue "{{3F51F797-68EC-44F4-9366-F3D5F22B306D}"
 #endif
 #ifndef AppNameValue
-  #define AppNameValue "RStudio AI"
+  #define AppNameValue "RStudio"
 #endif
 
 [Setup]
@@ -24,7 +24,7 @@ AppId={#AppIdValue}
 AppName={#AppNameValue}
 AppVersion={#AppVersion}
 AppVerName={#AppNameValue} {#AppVersion}
-AppPublisher=RStudio AI
+AppPublisher=RStudio
 AppComments=RStudio with a bundled R runtime and offline statistics assistant
 VersionInfoVersion={#NumericVersion}
 VersionInfoProductName={#AppNameValue}
@@ -35,7 +35,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.18362
 OutputDir={#OutputDir}
-OutputBaseFilename=RStudio-AI-{#AppVersion}-setup
+OutputBaseFilename=RStudio-{#AppVersion}-setup
 SetupIconFile=..\..\src\node\desktop\resources\icons\RStudio.ico
 UninstallDisplayIcon={app}\RStudio\rstudio.exe
 UninstallDisplayName={#AppNameValue} {#AppVersion}
@@ -49,6 +49,13 @@ CloseApplications=yes
 
 [Tasks]
 Name: desktopicon; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+#if AppNameValue == "RStudio"
+[InstallDelete]
+; Remove the old fork's shortcuts only when upgrading that installation in place.
+Type: files; Name: "{autoprograms}\RStudio AI.lnk"; Check: UpgradingRenamedFork
+Type: files; Name: "{autodesktop}\RStudio AI.lnk"; Check: UpgradingRenamedFork
+#endif
 
 [Files]
 ; Work, settings, history and model files are never installation payloads.
@@ -73,4 +80,19 @@ Name: "{autoprograms}\{#AppNameValue}"; Filename: "{app}\Start-RStudio.cmd"; Wor
 Name: "{autodesktop}\{#AppNameValue}"; Filename: "{app}\Start-RStudio.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\RStudio\rstudio.exe"; Flags: runminimized; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\Start-RStudio.cmd"; WorkingDir: "{app}"; Description: "Start RStudio now"; Flags: postinstall nowait skipifsilent runminimized shellexec
+Filename: "{app}\Start-RStudio.cmd"; WorkingDir: "{app}"; Description: "Start {#AppNameValue} now"; Flags: postinstall nowait skipifsilent runminimized shellexec
+
+[Code]
+function UpgradingRenamedFork: Boolean;
+var
+  OldPath, OldName: String;
+begin
+  Result := RegQueryStringValue(HKCU,
+    'Software\Microsoft\Windows\CurrentVersion\Uninstall\{3F51F797-68EC-44F4-9366-F3D5F22B306D}_is1',
+    'InstallLocation', OldPath) and RegQueryStringValue(HKCU,
+    'Software\Microsoft\Windows\CurrentVersion\Uninstall\{3F51F797-68EC-44F4-9366-F3D5F22B306D}_is1',
+    'DisplayName', OldName);
+  Result := Result and (Pos('RStudio AI', OldName) = 1) and
+    (CompareText(RemoveBackslashUnlessRoot(OldPath),
+      RemoveBackslashUnlessRoot(ExpandConstant('{app}'))) = 0);
+end;

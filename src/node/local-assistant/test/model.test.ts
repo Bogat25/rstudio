@@ -50,15 +50,28 @@ test('supervisor starts once, waits through loading, restarts after exit and clo
 });
 
 test('missing model is an actionable error', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'rstudio-missing-model-'));
+  // Own the endpoint: a running IDE may already serve the default model port.
+  const server = http.createServer((_req, response) => response.writeHead(503).end());
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
   const model = new Model(() => {});
-  await assert.rejects(model.ready({ ...defaults(), modelDirectory: path.join(os.tmpdir(), 'no-rstudio-model') }), /model is missing/);
-  model.stop();
+  try {
+    await assert.rejects(model.ready({ ...defaults(directory), modelDirectory: directory,
+      port: (server.address() as any).port }), /model is missing/);
+  } finally {
+    model.stop();
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    await rm(directory, { recursive: true, force: true });
+  }
 });
 
 test('startup failure reports the server error and a hung startup is bounded', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'rstudio-model-failure-'));
   await writeFile(path.join(directory, MODEL), 'fixture');
-  const settings = { ...defaults(directory), modelDirectory: directory, serverExe: process.execPath, startupTimeout: 1, port: 18715 };
+  const server = http.createServer((_req, response) => response.writeHead(503).end());
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  const settings = { ...defaults(directory), modelDirectory: directory, serverExe: process.execPath,
+    startupTimeout: 1, port: (server.address() as any).port };
   const children: ReturnType<typeof spawn>[] = [];
   const failed = new Model(() => {}, () => {
     const child = spawn(process.execPath, ['-e', 'console.error("error: fixture model failed to load"); process.exit(2)'], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -75,6 +88,7 @@ test('startup failure reports the server error and a hung startup is bounded', a
     assert.ok(Date.now() - start < 2500);
   } finally {
     await failed.stop(); await hung.stop();
+    await new Promise<void>(resolve => server.close(() => resolve()));
     assert.ok(children.every(child => child.exitCode !== null || child.signalCode !== null));
     await rm(directory, { recursive: true, force: true });
   }

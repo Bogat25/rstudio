@@ -17,7 +17,7 @@ launch/upgrade/uninstall lifecycle. Playwright dependencies are installed before
 the launcher tests. Models are excluded; the workflow does not run real-model
 inference by default.
 
-A separate release job publishes `RStudio-AI-<version>-setup.exe` and its
+A separate release job publishes `RStudio-<version>-setup.exe` and its
 `.sha256` file. Versions with a suffix are prereleases. Actions also retains
 the installer artifact for 90 days, subject to repository policy; failure logs
 have a shorter retention period. The workflow uses GitHub's job token rather
@@ -51,8 +51,8 @@ included in the installer. The installer requests `PrivilegesRequired=lowest`.
 To compare a downloaded installer against its adjacent checksum file:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\RStudio-AI-0.1.0-setup.exe
-Get-Content .\RStudio-AI-0.1.0-setup.exe.sha256
+Get-FileHash -Algorithm SHA256 .\RStudio-0.1.0-setup.exe
+Get-Content .\RStudio-0.1.0-setup.exe.sha256
 ```
 
 Checksums detect a mismatch; they do not replace code signing or trusted release

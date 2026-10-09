@@ -487,7 +487,7 @@ function Test-Runtime([string]$Root) {
 
 function Invoke-Package {
     Copy-Runtime $Dist -WithoutModel:$NoModel
-    $zip = Join-Path $BuildRoot 'RStudio-AI-portable.zip'
+    $zip = Join-Path $BuildRoot 'RStudio-portable.zip'
     # ZIP contains the program only for -NoModel; never stale models from an
     # earlier model-inclusive package. Work in dist remains untouched.
     $scratch = Join-Path $BuildRoot 'zip-stage'
@@ -526,7 +526,7 @@ function Invoke-Installer {
     if ($ggufs.Count) { throw 'Installer staging unexpectedly contains model files.' }
     New-Item -ItemType Directory -Path $InstallerDir -Force | Out-Null
     Invoke-Logged $iscc @("/DAppVersion=$($ver.Text)","/DNumericVersion=$($ver.Numeric)","/DStageDir=$Stage","/DOutputDir=$InstallerDir",(Join-Path $Repo 'package\windows\rstudio-ai.iss')) $Repo 'installer'
-    $exe = Join-Path $InstallerDir ("RStudio-AI-$($ver.Text)-setup.exe")
+    $exe = Join-Path $InstallerDir ("RStudio-$($ver.Text)-setup.exe")
     if (-not (Test-Path -LiteralPath $exe)) { throw 'Installer compiler returned success but produced no setup EXE.' }
     Write-Checksum $exe
     Say "installer: $exe; checksum: $exe.sha256"
@@ -565,7 +565,7 @@ function Invoke-Deploy {
     if ($root -ieq [IO.Path]::GetPathRoot($env:SystemRoot)) { throw 'Cannot deploy to the Windows system drive.' }
     if (-not (Test-Path -LiteralPath $root)) { throw 'Target drive is not mounted.' }
     Test-Runtime $Dist
-    $target = Join-Path $root 'RStudio-AI'
+    $target = Join-Path $root 'RStudio'
     $marker = Join-Path $target '.rstudio-deploy'
     if ((Test-Path -LiteralPath $target) -and -not (Test-Path -LiteralPath $marker)) { throw 'Target exists and was not created by this workflow.' }
     $null = Assert-ChildPath $target $root

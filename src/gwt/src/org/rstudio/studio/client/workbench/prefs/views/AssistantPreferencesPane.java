@@ -281,7 +281,6 @@ public class AssistantPreferencesPane extends PreferencesPane
       lblProjectOverride_.getElement().getStyle().setFontStyle(FontStyle.ITALIC);
 
       cbCopilotShowMessages_ = checkboxPref(prefs_.copilotShowMessages(), true);
-      cbAssistantToolbarButtonVisible_ = checkboxPref(prefs_.assistantToolbarButtonVisible(), true);
       cbAssistantUseSystemCa_ = checkboxPref(prefs_.assistantUseSystemCa(), true);
       nvwAssistantUpdateCheckInterval_ = numericPref(
             prefsConstants_.positAssistantUpdateCheckIntervalHoursTitle(),
@@ -464,13 +463,10 @@ public class AssistantPreferencesPane extends PreferencesPane
          }
       });
 
-      // The toolbar button and update-check interval apply only to Posit
-      // Assistant; show them only when it is available. The system certificate
+      // The update-check interval applies only to Posit Assistant. The system certificate
       // store option applies to every AI agent (Copilot included), so it stays
       // visible whenever this pane is shown.
       boolean paiEnabled = paiUtil_.isPositAssistantEnabled();
-      if (paiEnabled)
-         add(cbAssistantToolbarButtonVisible_);
       add(cbAssistantUseSystemCa_);
       if (paiEnabled)
       {
@@ -1799,7 +1795,6 @@ public class AssistantPreferencesPane extends PreferencesPane
    private final Label lblAssistantStatus_;
    private final Spinner imgRefreshSpinner_;
    private final CheckBox cbCopilotShowMessages_;
-   private final CheckBox cbAssistantToolbarButtonVisible_;
    private final CheckBox cbAssistantUseSystemCa_;
    private final CheckBox cbAssistantNesEnabled_;
    private final CheckBox cbAssistantNesCollapse_;

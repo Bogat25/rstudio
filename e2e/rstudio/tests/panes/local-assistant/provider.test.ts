@@ -15,7 +15,9 @@ test.describe('Local assistant provider', { tag: ['@chat'] }, () => {
     try {
       await setPref(page, 'assistant', 'none');
       await setPref(page, 'chat_provider', 'local');
-      await executeCommand(page, 'activateChat');
+      await expect(page.locator("iframe[title='Posit Assistant']")).toHaveCount(0);
+      await expect(page.locator('#rstudio_assistant_toggle_button')).toHaveCount(0);
+      await page.keyboard.press('Control+Shift+T');
       const frame = page.frameLocator("iframe[title='Posit Assistant']");
       await expect(frame.locator('body[data-provider=local]')).toBeVisible({ timeout: 30000 });
       await expect(frame.locator('#status')).not.toHaveText('Connecting to the local assistant…');
@@ -29,18 +31,30 @@ test.describe('Local assistant provider', { tag: ['@chat'] }, () => {
     }
   });
 
-  test('pop-out and return load the same local client', { tag: '@desktop_only' }, async ({ rstudioPage: page }) => {
+  test('only the shortcut opens Chat and toggles repeatedly from iframe focus', { tag: '@desktop_only' }, async ({ rstudioPage: page }) => {
+    await setPref(page, 'chat_provider', 'none');
     await setPref(page, 'chat_provider', 'local');
-    await executeCommand(page, 'activateChat');
-    await expect(page.frameLocator("iframe[title='Posit Assistant']").locator('body[data-provider=local]')).toBeVisible({ timeout: 30000 });
-    const nextPage = page.context().waitForEvent('page');
-    await executeCommand(page, 'popOutChat');
-    const satellite = await nextPage;
-    await expect(satellite.frameLocator("iframe[title='Posit Assistant']").locator('body[data-provider=local]')).toBeVisible({ timeout: 30000 });
-    const closed = satellite.waitForEvent('close');
-    await executeCommand(page, 'returnChatToMain');
-    await closed;
-    await expect(page.frameLocator("iframe[title='Posit Assistant']").locator('body[data-provider=local]')).toBeVisible();
+    const iframe = page.locator("iframe[title='Posit Assistant']");
+    await expect(iframe).not.toBeVisible();
+    expect(await page.evaluate(() => ['activateChat', 'popOutChat', 'returnChatToMain', 'layoutZoomChat']
+      .some(id => window.rstudio?.commands[id].isVisible()))).toBe(false);
+    await executeCommand(page, 'showCommandPalette');
+    const search = page.locator('#rstudio_command_palette_search');
+    await expect(search).toBeVisible();
+    await search.pressSequentially('Toggle Chat');
+    await expect(page.locator('#rstudio_command_palette_list')).not.toContainText('Toggle Chat');
+    await search.press('Escape');
+    await expect(search).not.toBeVisible();
+    await page.keyboard.press('Control+Shift+T');
+    const question = page.frameLocator("iframe[title='Posit Assistant']").locator('#question');
+    await expect(question).toBeVisible({ timeout: 30000 });
+    await question.focus();
+    await question.press('Control+Shift+T');
+    await expect(iframe).not.toBeVisible();
+    await page.keyboard.press('Control+Shift+T');
+    await expect(question).toBeVisible();
+    await question.press('Control+Shift+T');
+    await expect(iframe).not.toBeVisible();
     await setPref(page, 'chat_provider', 'none');
   });
 });

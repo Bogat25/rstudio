@@ -20,10 +20,10 @@ rem Prefer portable scratch space; otherwise use a private app subdirectory
 rem under an existing user temp location. No machine settings are changed.
 set "RSTUDIO_TEMP_DIR="
 call :selectTemp "%~dp0work\tmp"
-if not defined RSTUDIO_TEMP_DIR if defined RSTUDIO_ORIGINAL_TMPDIR call :selectTemp "%RSTUDIO_ORIGINAL_TMPDIR%\RStudio-AI"
-if not defined RSTUDIO_TEMP_DIR if defined RSTUDIO_ORIGINAL_TMP call :selectTemp "%RSTUDIO_ORIGINAL_TMP%\RStudio-AI"
-if not defined RSTUDIO_TEMP_DIR if defined RSTUDIO_ORIGINAL_TEMP call :selectTemp "%RSTUDIO_ORIGINAL_TEMP%\RStudio-AI"
-if not defined RSTUDIO_TEMP_DIR if defined LOCALAPPDATA call :selectTemp "%LOCALAPPDATA%\Temp\RStudio-AI"
+if not defined RSTUDIO_TEMP_DIR if defined RSTUDIO_ORIGINAL_TMPDIR call :selectTemp "%RSTUDIO_ORIGINAL_TMPDIR%\RStudio"
+if not defined RSTUDIO_TEMP_DIR if defined RSTUDIO_ORIGINAL_TMP call :selectTemp "%RSTUDIO_ORIGINAL_TMP%\RStudio"
+if not defined RSTUDIO_TEMP_DIR if defined RSTUDIO_ORIGINAL_TEMP call :selectTemp "%RSTUDIO_ORIGINAL_TEMP%\RStudio"
+if not defined RSTUDIO_TEMP_DIR if defined LOCALAPPDATA call :selectTemp "%LOCALAPPDATA%\Temp\RStudio"
 if not defined RSTUDIO_TEMP_DIR (
     echo RStudio could not find a writable temporary folder without spaces. Set TEMP to such a folder and try again. 1>&2
     exit /b 1

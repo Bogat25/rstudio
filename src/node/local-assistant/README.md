@@ -1,6 +1,6 @@
 # Local R assistant
 
-This is the assistant guide for the independent **RStudio AI hard fork**.
+This is the assistant guide for the independent **RStudio hard fork**.
 Local AI is the fork's main goal; long-term upstream synchronization is not
 planned. See the [repository README](../../../README.md),
 [documentation index](../../../docs/fork/README.md), and
@@ -9,10 +9,12 @@ and known limits. The primary release target is Windows x64 desktop.
 
 Select **Local model (offline)** in Global Options > Assistant or Project
 Options > Assistant. This fork defaults to it. Open or hide Chat with
-**View > Panes > Toggle Chat**, **Ctrl+Shift+T** on Windows/Linux or
+**Ctrl+Shift+T** on Windows/Linux or
 **Cmd+Shift+T** on macOS. Customize the command in Tools > Modify Keyboard
-Shortcuts. The shortcut also works in the question box. Hiding or popping out
-the pane retains the conversation; New chat clears it. Select **None** to
+Shortcuts. The shortcut also works in the question box. Chat starts hidden on
+every launch, even if it was open or popped out in a previous version. No
+toolbar button, menu entry, or command-palette action opens it. Hiding the pane
+retains the conversation; New chat clears it. Select **None** to
 stop the backend and remove Chat commands. Posit Assistant remains a separate
 provider with its existing installation and sign-in behavior.
 
@@ -209,6 +211,12 @@ $env:PW_RSTUDIO_R_LIBS_SKIP_PREP = '1'
 $env:PATH = 'C:\rstudio-tools\dependencies\common\node\24.21.0-installed;' + $env:R_HOME + '\bin\x64;' + $env:PATH
 npm run test:desktop-dev -- tests/panes/local-assistant tests/preferences/assistant_provider_switch.test.ts --no-deps --workers=1 --retries=0
 ```
+
+To exercise an existing staged package instead of a development server, set
+`PW_RSTUDIO_BIN` to `<build-root>\stage\RStudio\rstudio.exe` and `R_HOME` to
+`<build-root>\stage\R`, then use `npm run test:desktop` with the same test
+arguments. Keep the isolated-profile and tracing settings above. The executable
+override avoids replacing or testing a user's installed IDE.
 
 From this package, opt into a real CPU check, or set the same variable before
 Playwright for its real-model IDE test:

@@ -16,6 +16,7 @@ if (!fs.existsSync(playwrightPath)) {
   process.exit(1);
 }
 const { chromium } = require(playwrightPath);
+const { expect } = require(path.join(repo, 'e2e/rstudio/node_modules/@playwright/test'));
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function freePort() {
   const server = net.createServer();
@@ -49,8 +50,17 @@ const runtime = installed ? sourceRuntime : path.join(test, 'Application with sp
   const config = path.join(work, 'config');
   const scratch = path.join(test, 'tmp');
   for (const dir of [config, work, scratch, path.join(work, 'library'), path.join(work, 'tmp'), path.join(data, 'local-assistant')]) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(config, 'rstudio-prefs.json'), JSON.stringify({ chat_provider: hasLocalAssistant ? 'local' : 'none', save_workspace: 'never', load_workspace: false }));
+  // Reproduce a layout saved while the assistant was open in an older build.
+  fs.writeFileSync(path.join(config, 'rstudio-prefs.json'), JSON.stringify({
+    chat_provider: hasLocalAssistant ? 'local' : 'none', save_workspace: 'never', load_workspace: false,
+    panes: { ...schema.properties.panes.default, sidebar_visible: true },
+  }));
   fs.writeFileSync(path.join(data, 'local-assistant/settings.json'), JSON.stringify({ port: await freePort(), downloadOffered: true }));
+  const state = path.join(data, 'pcs');
+  fs.mkdirSync(state, { recursive: true });
+  fs.writeFileSync(path.join(state, 'chat-window.pper'), JSON.stringify({
+    chatSatelliteState: { poppedOut: true, geometry: { x: 100, y: 100, width: 500, height: 700 } },
+  }));
   const port = await freePort();
   const env = { ...process.env,
     TEMP: scratch, TMP: scratch, TMPDIR: path.join(work, 'tmp'),
@@ -110,6 +120,8 @@ const runtime = installed ? sourceRuntime : path.join(test, 'Application with sp
   const consoleInput = page.locator('#rstudio_console_input .ace_text-input');
   await consoleInput.waitFor({ timeout: 30000 });
   console.log('PASS packaged RStudio opens its R console');
+  await expect(page).toHaveTitle(/RStudio/);
+  console.log('PASS window uses the RStudio product name');
   step = 'bundled R execution';
   const rPath = path.join(runtime, 'R').replaceAll('\\', '/');
   await page.evaluate(command => {
@@ -129,10 +141,28 @@ const runtime = installed ? sourceRuntime : path.join(test, 'Application with sp
   await page.waitForFunction(() => document.getElementById('rstudio_console_output')?.innerText.includes('PACKAGED_TEMP_OK TRUE'), null, { timeout: 30000 });
   console.log('PASS launched IDE uses a writable R temporary directory without spaces');
   if (hasLocalAssistant) {
-    step = 'bundled offline assistant';
+    step = 'assistant starts hidden with no external controls';
+    const iframe = page.locator("iframe[title='Posit Assistant']");
+    await expect(iframe).toHaveCount(0);
+    await expect(page.getByRole('tabpanel', { name: 'Posit Assistant', exact: true })).not.toBeVisible();
+    await expect(page.locator('#rstudio_assistant_toggle_button')).toHaveCount(0);
+    await expect(page.locator('#rstudio_sidebar_toggle_button')).not.toBeVisible();
+    await expect.poll(() => browser.contexts().flatMap(context => context.pages()).length).toBe(1);
+    console.log('PASS saved sidebar/pop-out state does not reopen Chat or expose toggle buttons');
+    step = 'bundled offline assistant shortcut';
     await page.keyboard.press('Control+Shift+t');
     await page.frameLocator("iframe[title='Posit Assistant']").locator('body[data-provider=local]').waitFor({ timeout: 30000 });
     console.log('PASS packaged offline assistant loads');
+    const question = page.frameLocator("iframe[title='Posit Assistant']").locator('#question');
+    await question.focus();
+    await question.press('Control+Shift+t');
+    await expect(iframe).not.toBeVisible();
+    await consoleInput.focus();
+    await page.keyboard.press('Control+Shift+t');
+    await expect(question).toBeVisible();
+    await question.press('Control+Shift+t');
+    await expect(iframe).not.toBeVisible();
+    console.log('PASS shortcut repeatedly closes from the question box and reopens Chat');
   } else {
     console.log('SKIP offline Chat: this packaged source does not enable the local provider');
   }

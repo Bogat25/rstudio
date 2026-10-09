@@ -1,4 +1,4 @@
-# RStudio AI documentation
+# RStudio documentation
 
 These guides describe the independently maintained local-AI hard fork. Routine
 synchronization with upstream RStudio is not planned. The release target covered
