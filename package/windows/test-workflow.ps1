@@ -27,8 +27,63 @@ try {
         $v = Resolve-Version
         if ($v.Text -ne '0.2.0-rc.1' -or $v.Suffix -ne '-rc.1' -or $v.Numeric -ne '0.2.0.0') { throw 'Dotted prerelease failed.' }
     }
+    Check 'four-part Windows release and prerelease versions' {
+        $script:Version = 'v0.1.8.1'
+        $v = Resolve-Version
+        if ($v.Text -ne '0.1.8.1' -or $v.Numeric -ne '0.1.8.1' -or $v.Revision -ne '1' -or $v.Suffix -ne '') { throw 'Windows revision failed.' }
+        $script:Version = '1.2.3.65535-rc.1'
+        $v = Resolve-Version
+        if ($v.Text -ne '1.2.3.65535-rc.1' -or $v.Numeric -ne '1.2.3.65535' -or $v.Suffix -ne '-rc.1') { throw 'Windows prerelease revision failed.' }
+        $script:Version = '1.2.3'
+        if ((Resolve-Version).Revision -ne '0') { throw 'Default Windows revision failed.' }
+    }
+    Check 'infer a four-part version from the checkout tag' {
+        $fixtureRepo = Join-Path $BuildRoot 'version-repo'
+        & git init --quiet $fixtureRepo
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot initialize version fixture.' }
+        & git -C $fixtureRepo -c user.name='Version fixture' -c user.email='version-fixture@example.invalid' -c commit.gpgsign=false commit --quiet --allow-empty -m fixture
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot commit version fixture.' }
+        & git -C $fixtureRepo -c tag.gpgsign=false tag v0.1.8.1
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot tag version fixture.' }
+        $savedRepo = $script:Repo
+        try {
+            $script:Repo = $fixtureRepo
+            $script:Version = ''
+            if ((Resolve-Version).Text -ne '0.1.8.1') { throw 'Checkout tag inference failed.' }
+        } finally { $script:Repo = $savedRepo }
+    }
+    Check 'CMake preserves release, revision and prerelease fields' {
+        $versionCheck = Join-Path $BuildRoot 'check-version.cmake'
+        @'
+include("${VERSION_MODULE}")
+foreach(field MAJOR MINOR PATCH REVISION SUFFIX)
+   if(NOT "${CPACK_PACKAGE_VERSION_${field}}" STREQUAL "${EXPECTED_${field}}")
+      message(FATAL_ERROR "Incorrect ${field}: '${CPACK_PACKAGE_VERSION_${field}}'")
+   endif()
+endforeach()
+if(NOT CPACK_PACKAGE_VERSION STREQUAL RSTUDIO_FORK_VERSION)
+   message(FATAL_ERROR "Complete fork version was lost")
+endif()
+'@ | Set-Content -LiteralPath $versionCheck -Encoding ascii
+        foreach ($candidate in '1.2.3','0.2.0-rc1','0.2.0-rc.1','v0.1.8.1','1.2.3.65535-rc.1') {
+            $script:Version = $candidate
+            $v = Resolve-Version
+            $base = '{0}.{1}.{2}' -f $v.Major,$v.Minor,$v.Patch
+            & cmake "-DVERSION_MODULE=$root/cmake/fork-version.cmake" "-DRSTUDIO_FORK_VERSION=$($v.Text)" `
+                "-DEXPECTED_MAJOR=$($v.Major)" "-DEXPECTED_MINOR=$($v.Minor)" "-DEXPECTED_PATCH=$($v.Patch)" `
+                "-DEXPECTED_REVISION=$($v.Revision)" "-DEXPECTED_SUFFIX=$($v.Text.Substring($base.Length))" -P $versionCheck
+            if ($LASTEXITCODE -ne 0) { throw "CMake version conversion failed: $candidate" }
+        }
+        foreach ($candidate in '1.2.3.4.5','1.2.3.65536','1.2.3.4-rc..1') {
+            Must-Throw {
+                & cmake "-DRSTUDIO_FORK_VERSION=$candidate" -P "$root/cmake/fork-version.cmake" 2>&1 | Out-Null
+                if ($LASTEXITCODE -ne 0) { throw "CMake rejected invalid version: $candidate" }
+            }
+        }
+    }
     Check 'reject invalid and oversized versions' {
-        foreach ($v in '1.2','1.2.3 & whoami','65536.1.0','1.2.3-rc..1','1.2.3-.rc','1.2.3-rc.') {
+        foreach ($v in '1.2','1.2.3 & whoami','65536.1.0','1.2.3-rc..1','1.2.3-.rc','1.2.3-rc.',
+            '1.2.3.4.5','1.2.3.65536','1.2.3.-1','1.2.3.4-rc..1','1.2.3.4 & whoami','vv1.2.3') {
             $script:Version = $v
             Must-Throw { Resolve-Version }
         }

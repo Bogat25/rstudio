@@ -6,9 +6,16 @@ The fork's package version is independent of the bundled R version and inherited
 RStudio versioning. Use one consistent fork version for the tag and installer.
 
 [windows-installer.yml](../../.github/workflows/windows-installer.yml) runs on
-pushed version tags such as `v0.1.0`, `0.1.0`, or `v0.2.0-rc.1`. It does not
+pushed version tags such as `v0.1.0`, `0.1.0`, `v0.1.8.1`, or `v0.2.0-rc.1`. It does not
 currently expose a manual dispatch entry point. A local tag alone does not start
 a hosted build; the workflow must exist in the tagged commit pushed by the owner.
+
+Versions may have three numeric components or a fourth Windows revision, with
+an optional prerelease suffix. Each numeric component must be at most 65535.
+The complete version is retained in desktop/session metadata and installer
+names; Windows installer numeric metadata uses the fourth component, or zero
+when omitted. For example, `v0.1.8.1` produces version `0.1.8.1`, while
+`v0.2.0-rc.1` produces display version `0.2.0-rc.1` and numeric version `0.2.0.0`.
 
 The Windows job installs the selected MSVC/RStudio dependencies, builds the
 optimized C++/Electron/GWT desktop, checks versions and assistant behavior,

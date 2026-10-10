@@ -55,14 +55,7 @@ set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSIO
 # The fork's local Windows workflow accepts a complete release version. An
 # explicit suffix-free version must not acquire the upstream development suffix.
 if(DEFINED RSTUDIO_FORK_VERSION)
-   if(NOT RSTUDIO_FORK_VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-[0-9A-Za-z]+(\\.[0-9A-Za-z]+)*)?$")
-      message(FATAL_ERROR "RSTUDIO_FORK_VERSION must be a three-part version with an optional prerelease suffix")
-   endif()
-   set(CPACK_PACKAGE_VERSION_MAJOR "${CMAKE_MATCH_1}")
-   set(CPACK_PACKAGE_VERSION_MINOR "${CMAKE_MATCH_2}")
-   set(CPACK_PACKAGE_VERSION_PATCH "${CMAKE_MATCH_3}")
-   set(CPACK_PACKAGE_VERSION_SUFFIX "${CMAKE_MATCH_4}")
-   set(CPACK_PACKAGE_VERSION "${RSTUDIO_FORK_VERSION}")
+   include("${CMAKE_CURRENT_LIST_DIR}/fork-version.cmake")
 endif()
 
 string(TIMESTAMP CPACK_COPYRIGHT_YEAR "%Y")

@@ -46,8 +46,12 @@ try {
     Test-Runtime $app
     Check 'runtime installs into a path containing spaces' $true
     Check 'per-user uninstall registration' (Test-Path -LiteralPath $registry)
+    Check 'registered display version preserves the complete release' ((Get-ItemProperty -LiteralPath $registry -Name DisplayVersion).DisplayVersion -eq $versionText)
     Check 'installed product uses the RStudio name' ((Get-ItemProperty -LiteralPath $registry -Name DisplayName).DisplayName -like 'RStudio Test *')
     Check 'installer product metadata uses the RStudio name' ((Get-Item -LiteralPath $setup).VersionInfo.ProductName -like 'RStudio Test *')
+    $setupVersion = (Get-Item -LiteralPath $setup).VersionInfo
+    $numericVersion = '{0}.{1}.{2}.{3}' -f $setupVersion.FileMajorPart,$setupVersion.FileMinorPart,$setupVersion.FileBuildPart,$setupVersion.FilePrivatePart
+    Check 'installer numeric metadata preserves the Windows revision' ([version]$numericVersion -eq [version]$versionInfo.Numeric)
     Check 'desktop executable product metadata uses the RStudio name' ((Get-Item -LiteralPath (Join-Path $app 'RStudio\rstudio.exe')).VersionInfo.ProductName -eq 'RStudio')
     Check 'models excluded from installation' (@(Get-ChildItem -LiteralPath $app -Recurse -File -Filter '*.gguf*').Count -eq 0)
     Invoke-Logged $Node @((Join-Path $root 'package\windows\test-runtime.cjs'),$app,$BuildRoot,'--installed-runtime') $root 'installed-runtime-test'

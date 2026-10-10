@@ -389,19 +389,22 @@ function Stop-BuildProcesses {
 }
 
 function Resolve-Version {
+    $pattern = '^v?(?<Major>[0-9]+)\.(?<Minor>[0-9]+)\.(?<Patch>[0-9]+)(?:\.(?<Revision>[0-9]+))?(?<Suffix>-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?$'
     $v = $Version
     if (-not $v) {
         $tags = @(& git -C $Repo tag --points-at HEAD)
-        $v = $tags | Where-Object { $_ -match '^v?\d+\.\d+\.\d+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$' } | Select-Object -First 1
+        $v = $tags | Where-Object { $_ -match $pattern } | Select-Object -First 1
         if (-not $v) { $v = '0.0.0-dev' }
     }
+    if ($v -notmatch $pattern) { throw 'Version must look like 0.1.0, 0.1.8.1, 0.2.0-rc1 or 0.2.0-rc.1.' }
     $v = $v -replace '^v',''
-    if ($v -notmatch '^(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$') { throw 'Version must look like 0.1.0, 0.2.0-rc1 or 0.2.0-rc.1.' }
-    foreach ($part in $Matches[1],$Matches[2],$Matches[3]) {
+    $revision = if ($Matches.ContainsKey('Revision')) { $Matches.Revision } else { '0' }
+    $parts = @($Matches.Major,$Matches.Minor,$Matches.Patch,$revision)
+    foreach ($part in $parts) {
         if ([long]$part -gt 65535) { throw 'Numeric version components must fit Windows version fields.' }
     }
-    $suffix = if ($Matches.ContainsKey(4)) { $Matches[4] } else { '' }
-    return @{ Text=$v; Numeric=('{0}.{1}.{2}.0' -f $Matches[1],$Matches[2],$Matches[3]); Major=$Matches[1]; Minor=$Matches[2]; Patch=$Matches[3]; Suffix=$suffix }
+    $suffix = if ($Matches.ContainsKey('Suffix')) { $Matches.Suffix } else { '' }
+    return @{ Text=$v; Numeric=($parts -join '.'); Major=$parts[0]; Minor=$parts[1]; Patch=$parts[2]; Revision=$revision; Suffix=$suffix }
 }
 
 function Invoke-Build([switch]$Draft) {

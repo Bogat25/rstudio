@@ -32,6 +32,13 @@ TEST(SessionVersionTest, DottedPrereleasesHaveNoEmptyComponents)
    EXPECT_EQ("0.2.0.1", numericRStudioVersion("0", "2", "0", "-alpha.beta.1"));
 }
 
+TEST(SessionVersionTest, WindowsRevisionIsPreserved)
+{
+   EXPECT_EQ("0.1.8.1", numericRStudioVersion("0", "1", "8", ".1"));
+   EXPECT_EQ("0.1.8.1.2", numericRStudioVersion("0", "1", "8", ".1-rc.2"));
+   EXPECT_EQ("0.1.8.1.2", numericRStudioVersion("0", "1", "8", ".1-rc2"));
+}
+
 TEST(SessionVersionTest, UpstreamBuildNumbersAndCompactPrereleasesArePreserved)
 {
    EXPECT_EQ("2026.08.0.999", numericRStudioVersion("2026", "08", "0", "-dev+999"));

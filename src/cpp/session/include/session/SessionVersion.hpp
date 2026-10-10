@@ -23,6 +23,7 @@ namespace session {
 
 // R's package_version() accepts numeric components only. Retain numbers from
 // the suffix, without creating empty components for "rc.1", "dev", or a release.
+// Keep a Windows revision separate from prerelease digits in ".1-rc2".
 inline std::string numericRStudioVersion(const std::string& major,
                                         const std::string& minor,
                                         const std::string& patch,
@@ -34,7 +35,7 @@ inline std::string numericRStudioVersion(const std::string& major,
    {
       if (ch >= '0' && ch <= '9')
          component += ch;
-      else if (ch == '.' && !component.empty())
+      else if ((ch == '.' || ch == '-') && !component.empty())
       {
          version += "." + component;
          component.clear();

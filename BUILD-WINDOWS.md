@@ -101,7 +101,7 @@ The existing upstream NSIS packaging remains available separately.
 ## Installers from version tags
 
 [Windows installer](.github/workflows/windows-installer.yml) builds on pushed
-tags such as `v0.1.1`, `v0.2.0-rc.1` or `0.1.1`. It validates the version,
+tags such as `v0.1.1`, `v0.1.8.1`, `v0.2.0-rc.1` or `0.1.1`. It validates the version,
 installs the Windows build dependencies, builds the optimized desktop, and
 checks version conversion, assistant protocols, packaged startup and installer
 installation, upgrades and removal. The installer includes R 4.6.1 and excludes

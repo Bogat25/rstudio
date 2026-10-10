@@ -329,3 +329,42 @@ No new full native build, real-model inference, or non-Windows validation was
 performed for these automation changes. The lost hosted runner has not been reproduced
 locally. No hosted run was started and no GitHub settings, notifications,
 workflows, tags, or releases were changed remotely.
+
+## Four-part Windows release versions, 2026-10-10
+
+The [v0.1.8.1 hosted run](https://github.com/Bogat25/rstudio-local-ai-fork/actions/runs/38036967687)
+failed before compilation because its four-part tag was rejected by the
+three-part PowerShell version validator. CMake also required three components,
+so changing only the first validator would have moved the failure to configure.
+
+Explicit versions and tags inferred from HEAD now accept an optional fourth
+Windows revision, including prerelease suffixes. The full display version is
+preserved, the installer numeric version uses the revision, and CMake passes
+the revision through the session suffix for R's numeric version conversion.
+Three-part releases retain a zero Windows revision. All numeric fields remain
+limited to 65535.
+
+The assistant typecheck and protocol suite passed (21 tests; optional real-model
+test skipped). All 15 workflow checks passed, including explicit/inferred
+`v0.1.8.1`, revision limits, invalid inputs, and CMake field preservation for
+three- and four-part release/prerelease versions.
+
+The optimized GWT/C++/Electron desktop and Inno installer built successfully
+with version `0.1.8.1`. All four native `SessionVersionTest` cases passed,
+including stable Windows revisions and dotted/compact prerelease numbers.
+The desktop and setup executable retain `0.1.8.1` in their numeric and text
+Windows version metadata. The setup is available locally at
+`D:\rstudio-build\installer\RStudio-0.1.8.1-setup.exe`, with an adjacent checksum.
+
+The isolated installer lifecycle suite passed all 27 checks, plus the installed
+GUI checks, with an unelevated caller. This includes the complete registered
+display version, numeric Windows revision, bundled R, initially hidden Chat,
+keyboard toggles, preserved user content during upgrade, and uninstall cleanup.
+The test registration and fixture were removed successfully. The installer
+checksum, PowerShell syntax, and whitespace checks also passed. Non-Windows
+platforms and real-model inference were not rerun.
+
+Read-only inspection also confirmed that the inherited cache workflows skipped
+the owner's latest push to `main`. No hosted workflow was started or changed
+remotely. A new tag containing this fix is required; rerunning `v0.1.8.1` still
+checks out the old validator.
