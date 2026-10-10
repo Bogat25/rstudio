@@ -25,6 +25,7 @@ permissions:
 
 jobs:
   seed-windows-2025:
+    if: github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')
     uses: ./.github/workflows/os-test-e2e-rstudio-desktop-os-windows-server-2025.yml
     secrets:
       # The seed is the main writer of the shared S3 sccache; without this

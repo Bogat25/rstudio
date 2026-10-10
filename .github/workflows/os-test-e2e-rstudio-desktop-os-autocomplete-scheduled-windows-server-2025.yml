@@ -78,6 +78,7 @@ permissions:
 
 jobs:
   e2e-desktop-windows:
+    if: github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')
     runs-on: windows-2025
     timeout-minutes: 120
     defaults:

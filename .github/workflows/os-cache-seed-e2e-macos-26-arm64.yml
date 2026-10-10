@@ -49,6 +49,7 @@ permissions:
 
 jobs:
   seed:
+    if: github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')
     uses: ./.github/workflows/os-test-e2e-rstudio-desktop-os-macos-26-arm64.yml
     secrets:
       CONNECT_API_KEY: ${{ secrets.CONNECT_API_KEY }}

@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   run-server-ubuntu24:
+    if: github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')
     uses: ./.github/workflows/os-test-e2e-rstudio-server-os-ubuntu-24.yml
     secrets:
       CONNECT_API_KEY: ${{ secrets.CONNECT_API_KEY }}

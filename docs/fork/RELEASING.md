@@ -15,13 +15,26 @@ optimized C++/Electron/GWT desktop, checks versions and assistant behavior,
 creates the Inno installer, and verifies packaged startup and the installed
 launch/upgrade/uninstall lifecycle. Playwright dependencies are installed before
 the launcher tests. Models are excluded; the workflow does not run real-model
-inference by default.
+inference by default. Protocol/workflow, installer lifecycle, and packaged
+runtime checks run as separate steps with 10-, 20-, and 5-minute deadlines.
+Silent setup and upgrade processes also have 10-minute deadlines; uninstall
+and cleanup have 2-minute deadlines and stop only their own process trees.
 
 A separate release job publishes `RStudio-<version>-setup.exe` and its
 `.sha256` file. Versions with a suffix are prereleases. Actions also retains
-the installer artifact for 90 days, subject to repository policy; failure logs
-have a shorter retention period. The workflow uses GitHub's job token rather
+the installer artifact for 90 days, subject to repository policy. It is uploaded
+before verification so it remains available after a later runner failure;
+check that the complete installer job passed before treating it as verified.
+Build/test logs and screenshots are retained for 14 days after successful or
+failed runs when the runner remains available. Failed isolated installer tests
+retain their setup/upgrade/uninstall logs for the artifact upload.
+The workflow uses GitHub's job token rather
 than a custom personal access token.
+
+Inherited `os-*` maintenance, cache-seeding, and test workflows skip automatic
+schedule and push runs outside `rstudio/rstudio`. Their manual entry points
+remain available. The fork's Windows installer tag workflow is independent of
+these upstream services and schedules.
 
 ## Prepare a release
 

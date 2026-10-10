@@ -35,6 +35,7 @@ permissions:
 
 jobs:
   seed:
+    if: github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')
     strategy:
       fail-fast: false
       matrix:

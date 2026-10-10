@@ -47,6 +47,7 @@ permissions:
 
 jobs:
   linux-desktop:
+    if: github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')
     name: Ubuntu 24 Desktop (x86_64)
     uses: ./.github/workflows/os-test-e2e-rstudio-desktop-linux.yml
     secrets:
@@ -64,6 +65,7 @@ jobs:
       require_tests_passed: true
 
   macos:
+    if: github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')
     name: macOS 26 arm64
     uses: ./.github/workflows/os-test-e2e-rstudio-desktop-os-macos-26-arm64.yml
     secrets:
@@ -79,6 +81,7 @@ jobs:
       require_tests_passed: true
 
   windows:
+    if: github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')
     name: Windows Server 2025
     uses: ./.github/workflows/os-test-e2e-rstudio-desktop-os-windows-server-2025.yml
     secrets:

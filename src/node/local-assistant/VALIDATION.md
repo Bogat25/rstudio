@@ -287,3 +287,45 @@ The isolated upgrade test verifies preservation under a unique test identity;
 legacy-name shortcut cleanup remains checked by source review and compilation.
 Existing R locale warnings remain separate from IDE startup. No hosted workflow
 was triggered and nothing was written to GitHub.
+
+## Build automation and notification repair, 2026-10-10
+
+The hosted [v0.1.8 installer run](https://github.com/Bogat25/rstudio-local-ai-fork/actions/runs/37917705576)
+completed the optimized desktop and installer builds. The runner then lost
+communication during the combined protocol/installer test step. Its detailed
+job log and failure artifacts are unavailable, so the precise infrastructure
+cause cannot be established from that run.
+
+Recurring failures also came from inherited upstream schedules. The
+[cache sentinel](https://github.com/Bogat25/rstudio-local-ai-fork/actions/runs/38015010429)
+failed because this fork has Issues disabled; upstream E2E jobs also reported
+service authentication failures and test timeouts. Automatic schedule/push
+jobs in all 16 affected inherited workflows now skip outside `rstudio/rstudio`.
+Their manual entry points remain available; the Windows tag build is separate.
+The inherited stale action was updated to a pinned, supported version.
+
+Installer verification now has separate bounded protocol/workflow, lifecycle,
+and runtime steps. Silent install/upgrade/uninstall checks have process-tree
+deadlines, including detached children. Compiler chatter remains in log files
+without flooding the Actions console. Failed lifecycle tests retain their
+isolated installer logs; the workflow uploads logs after successful or failed
+checks and saves the installer before verification. The release job still
+requires every verification step to succeed.
+
+Local Windows validation:
+
+- Assistant TypeScript and protocol suite: 21 passed; optional real-model test
+  skipped.
+- Workflow helper suite: 12 passed, including exit-code propagation, waiting
+  for detached descendants, and terminating a stalled descendant at its deadline.
+- Actionlint passed for all 17 changed workflows. All 29 workflow files parsed;
+  guards were checked on 26 jobs, with existing triggers/selection conditions
+  preserved and release verification still required.
+- Isolated install/upgrade/uninstall suite: 25 passed, plus the installed
+  launcher's GUI checks. The final run completed cleanup successfully with an
+  unelevated caller, using the existing desktop stage and a unique test identity.
+
+No new full native build, real-model inference, or non-Windows validation was
+performed for these automation changes. The lost hosted runner has not been reproduced
+locally. No hosted run was started and no GitHub settings, notifications,
+workflows, tags, or releases were changed remotely.

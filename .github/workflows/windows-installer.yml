@@ -117,26 +117,8 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: .\rstudio.cmd installer -Version $env:VERSION -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
 
-      - name: Install packaged GUI check dependencies
-        run: |
-          . .\rstudio.ps1 -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
-          Initialize-Toolchain
-          Require-BuildTools
-          # The check drives the app through Playwright's CDP client only; skip
-          # install scripts so native e2e modules (better-sqlite3) are not
-          # compiled, which node-gyp 11 cannot do against Visual Studio 2026.
-          Invoke-Logged $Node @($NpmCli,'ci','--no-audit','--no-fund','--ignore-scripts') (Join-Path $Repo 'e2e\rstudio') 'gui-dependencies'
-
-      - name: Check assistant protocols and installer upgrades
-        run: .\rstudio.cmd test -Installer -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
-
-      - name: Check the packaged launcher, bundled R and offline Chat
-        run: |
-          . .\rstudio.ps1 -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
-          Initialize-Toolchain
-          Require-BuildTools
-          Invoke-Logged $Node @((Join-Path $Repo 'package\windows\test-runtime.cjs'),$Stage,$BuildRoot) $Repo 'runtime-test'
-
+      # Preserve the built package even if the hosted runner disappears during
+      # verification. The release job still requires every check to succeed.
       - name: Upload the installer and checksum
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -148,12 +130,52 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Upload build logs on failure
-        if: failure()
+      - name: Install packaged GUI check dependencies
+        run: |
+          . .\rstudio.ps1 -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
+          Initialize-Toolchain
+          Require-BuildTools
+          # The check drives the app through Playwright's CDP client only; skip
+          # install scripts so native e2e modules (better-sqlite3) are not
+          # compiled, which node-gyp 11 cannot do against Visual Studio 2026.
+          Invoke-Logged $Node @($NpmCli,'ci','--no-audit','--no-fund','--ignore-scripts') (Join-Path $Repo 'e2e\rstudio') 'gui-dependencies'
+
+      - name: Record verification resources
+        run: |
+          $drive = [IO.DriveInfo]::new([IO.Path]::GetPathRoot($env:BUILD_ROOT))
+          $memory = Get-CimInstance Win32_OperatingSystem
+          @(
+            "Free disk MB: $([math]::Floor($drive.AvailableFreeSpace / 1MB))"
+            "Free memory MB: $([math]::Floor($memory.FreePhysicalMemory / 1024))"
+          ) | Tee-Object -FilePath (Join-Path $env:BUILD_ROOT 'logs\verification-resources.log')
+
+      - name: Check assistant protocols and workflow safety
+        timeout-minutes: 10
+        run: .\rstudio.cmd test -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
+
+      - name: Check installer launch, upgrades and removal
+        timeout-minutes: 20
+        run: |
+          . .\rstudio.ps1 -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
+          Invoke-Logged 'powershell.exe' @('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $Repo 'package\windows\test-installer.ps1'),'-BuildRoot',$BuildRoot) $Repo 'installer-test'
+
+      - name: Check the packaged launcher, bundled R and offline Chat
+        timeout-minutes: 5
+        run: |
+          . .\rstudio.ps1 -BuildRoot $env:BUILD_ROOT -ToolsRoot $env:RSTUDIO_TOOLS_ROOT
+          Initialize-Toolchain
+          Require-BuildTools
+          Invoke-Logged $Node @((Join-Path $Repo 'package\windows\test-runtime.cjs'),$Stage,$BuildRoot) $Repo 'runtime-test'
+
+      - name: Upload build and verification logs
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-installer-logs-${{ github.run_id }}
-          path: ${{ env.BUILD_ROOT }}\logs\*.log
+          path: |
+            ${{ env.BUILD_ROOT }}\logs\*.log
+            ${{ env.BUILD_ROOT }}\logs\*.png
+            ${{ env.BUILD_ROOT }}\installer-test-*\*.log
           if-no-files-found: ignore
           retention-days: 14
 

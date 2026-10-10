@@ -109,6 +109,7 @@ permissions:
 
 jobs:
   pick:
+    if: github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')
     name: Pick engines
     runs-on: ubuntu-latest
     outputs:
@@ -300,6 +301,7 @@ jobs:
           echo "::notice::Linux Desktop matrix: $LINUX"
 
   resolve:
+    if: github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')
     name: Resolve installer URLs
     runs-on: ubuntu-latest
     # Every output is named for the daily manifest key it resolves, so an
@@ -382,7 +384,7 @@ jobs:
   linux-desktop:
     name: ${{ matrix.name }}
     needs: [pick, resolve]
-    if: ${{ needs.pick.outputs.linux_matrix != '[]' }}
+    if: ${{ (github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')) && (needs.pick.outputs.linux_matrix != '[]') }}
     strategy:
       fail-fast: false
       matrix:
@@ -403,7 +405,7 @@ jobs:
   ubuntu24s:
     name: Ubuntu 24 Server
     needs: [pick, resolve]
-    if: ${{ contains(fromJSON(needs.pick.outputs.selected), 'ubuntu24s') }}
+    if: ${{ (github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')) && (contains(fromJSON(needs.pick.outputs.selected), 'ubuntu24s')) }}
     uses: ./.github/workflows/os-test-e2e-rstudio-server-os-ubuntu-24.yml
     secrets:
       CONNECT_API_KEY: ${{ secrets.CONNECT_API_KEY }}
@@ -418,7 +420,7 @@ jobs:
   macos26:
     name: macOS 26 arm64
     needs: [pick, resolve]
-    if: ${{ contains(fromJSON(needs.pick.outputs.selected), 'macos26') }}
+    if: ${{ (github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')) && (contains(fromJSON(needs.pick.outputs.selected), 'macos26')) }}
     uses: ./.github/workflows/os-test-e2e-rstudio-desktop-os-macos-26-arm64.yml
     secrets:
       CONNECT_API_KEY: ${{ secrets.CONNECT_API_KEY }}
@@ -433,7 +435,7 @@ jobs:
   macos27:
     name: macOS 27 arm64
     needs: [pick, resolve]
-    if: ${{ contains(fromJSON(needs.pick.outputs.selected), 'macos27') }}
+    if: ${{ (github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')) && (contains(fromJSON(needs.pick.outputs.selected), 'macos27')) }}
     uses: ./.github/workflows/os-test-e2e-rstudio-desktop-os-macos-27-arm64.yml
     secrets:
       CONNECT_API_KEY: ${{ secrets.CONNECT_API_KEY }}
@@ -448,7 +450,7 @@ jobs:
   macos15:
     name: macOS 15 x86_64
     needs: [pick, resolve]
-    if: ${{ contains(fromJSON(needs.pick.outputs.selected), 'macos15') }}
+    if: ${{ (github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')) && (contains(fromJSON(needs.pick.outputs.selected), 'macos15')) }}
     uses: ./.github/workflows/os-test-e2e-rstudio-desktop-os-macos-15-x86_64.yml
     secrets:
       CONNECT_API_KEY: ${{ secrets.CONNECT_API_KEY }}
@@ -465,7 +467,7 @@ jobs:
   macos14:
     name: macOS 14 arm64
     needs: [pick, resolve]
-    if: ${{ contains(fromJSON(needs.pick.outputs.selected), 'macos14') }}
+    if: ${{ (github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')) && (contains(fromJSON(needs.pick.outputs.selected), 'macos14')) }}
     uses: ./.github/workflows/os-test-e2e-rstudio-desktop-os-macos-14-arm64.yml
     secrets:
       CONNECT_API_KEY: ${{ secrets.CONNECT_API_KEY }}
@@ -480,7 +482,7 @@ jobs:
   windows2025:
     name: Windows Server 2025
     needs: [pick, resolve]
-    if: ${{ contains(fromJSON(needs.pick.outputs.selected), 'windows2025') }}
+    if: ${{ (github.repository == 'rstudio/rstudio' || (github.event_name != 'schedule' && github.event_name != 'push')) && (contains(fromJSON(needs.pick.outputs.selected), 'windows2025')) }}
     uses: ./.github/workflows/os-test-e2e-rstudio-desktop-os-windows-server-2025.yml
     secrets:
       CONNECT_API_KEY: ${{ secrets.CONNECT_API_KEY }}

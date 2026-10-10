@@ -141,12 +141,40 @@ function Invoke-Logged([string]$Exe, [string[]]$Arguments, [string]$Directory, [
             $line = $raw -replace '(?i)(authToken(?:=|%3D))[^\s&"<>]+', '$1[redacted]'
             $writer.WriteLine($line)
             $verboseStage = $Label -eq 'stage' -and $line -match '^-- (Installing|Up-to-date):'
-            $verboseInstaller = $Label -eq 'installer' -and $line -match '^\s+(Compressing|Creating directory|Extracting):'
+            $verboseInstaller = $Label -in @('installer','installer-fixture') -and $line -match '^\s+(Compressing|Creating directory|Extracting):'
             if (-not ($verboseStage -or $verboseInstaller)) { Write-Host $line }
         }
         $code = $LASTEXITCODE
         if ($code -ne 0) { throw "$Label failed (exit $code). Log: $script:LastLog" }
     } finally { $writer.Dispose(); Pop-Location }
+}
+
+function Invoke-BoundedProcess([string]$Exe, [string[]]$Arguments,
+    [ValidateRange(1,1800)][int]$TimeoutSeconds, [string]$Label) {
+    # Start-Process -Wait tracks descendants, unlike Process.WaitForExit.
+    # Run that wait in a child shell so the whole tree also has a deadline.
+    $waitScript = Join-Path $Repo 'package\windows\wait-process.ps1'
+    $encodedArguments = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(
+        (ConvertTo-Json -InputObject $Arguments -Compress)))
+    $shell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    New-Item -ItemType Directory -Path $Logs -Force | Out-Null
+    $waitLog = Join-Path $Logs ('process-wait-' + [guid]::NewGuid().ToString('N') + '.log')
+    $process = Start-Process -FilePath $shell -ArgumentList @(
+        '-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',"`"$waitScript`"",
+        '-Exe',"`"$Exe`"",'-EncodedArguments',$encodedArguments) -WindowStyle Hidden -PassThru -RedirectStandardError $waitLog
+    $null = $process.Handle # Retain the exit code when using Windows PowerShell redirection.
+    try {
+        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+            # Only terminate the process tree started by this invocation.
+            $savedPreference = $ErrorActionPreference
+            try {
+                $ErrorActionPreference = 'Continue'
+                & taskkill.exe /PID $process.Id /T /F 2>&1 | Out-Null
+            } finally { $ErrorActionPreference = $savedPreference }
+            throw [TimeoutException]::new("$Label timed out after $TimeoutSeconds seconds.")
+        }
+        if ($process.ExitCode -ne 0) { throw "$Label failed (exit $($process.ExitCode)); wrapper log $waitLog" }
+    } finally { $process.Dispose() }
 }
 
 function Cmd-Quote([string]$Value) {

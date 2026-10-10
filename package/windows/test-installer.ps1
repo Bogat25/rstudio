@@ -30,6 +30,7 @@ Invoke-Logged $compiler @("/DAppVersion=$versionText","/DNumericVersion=$($versi
     "/DStageDir=$Stage","/DOutputDir=$test",(Join-Path $root 'package\windows\rstudio-ai.iss')) $root 'installer-fixture'
 $setup = Join-Path $test ("RStudio-$versionText-setup.exe")
 $passed = 0
+$succeeded = $false
 function Check([string]$Name, [bool]$Condition) {
     if (-not $Condition) { throw "FAILED $Name" }
     $script:passed++
@@ -37,9 +38,8 @@ function Check([string]$Name, [bool]$Condition) {
 }
 function Run-Setup([string]$Label) {
     $log = Join-Path $test "$Label.log"
-    $p = Start-Process -FilePath $setup -WindowStyle Hidden -Wait -PassThru -ArgumentList @(
-        '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOICONS','/TASKS=',"/DIR=`"$app`"","/LOG=`"$log`"")
-    if ($p.ExitCode -ne 0) { throw "$Label failed (exit $($p.ExitCode)); log $log" }
+    Invoke-BoundedProcess $setup @(
+        '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOICONS','/TASKS=',"/DIR=`"$app`"","/LOG=`"$log`"") 600 "$Label; log $log"
 }
 try {
     Run-Setup 'install'
@@ -73,20 +73,23 @@ try {
     $result = & (Join-Path $app 'R\bin\x64\Rscript.exe') --vanilla -e 'cat(as.character(getRversion()))'
     Check 'bundled R executes' ($LASTEXITCODE -eq 0 -and "$result" -match '^\d+\.\d+\.\d+$')
     $uninstall = Join-Path $app 'unins000.exe'
-    $p = Start-Process -FilePath $uninstall -WindowStyle Hidden -Wait -PassThru -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART'
-    Check 'uninstall completes' ($p.ExitCode -eq 0)
+    $uninstallLog = Join-Path $test 'uninstall.log'
+    Invoke-BoundedProcess $uninstall @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$uninstallLog`"") 120 "uninstall; log $uninstallLog"
+    Check 'uninstall completes' $true
     Check 'uninstall removes program' (-not (Test-Path (Join-Path $app 'RStudio\rstudio.exe')))
     Check 'uninstall removes downloaded model and partial file' (-not (Test-Path $model) -and -not (Test-Path $partial))
     foreach ($f in $settings,$notes,$history) { Check ('uninstall preserves ' + [IO.Path]::GetFileName($f)) (Test-Path -LiteralPath $f) }
     Check 'uninstall removes test registration' (-not (Test-Path -LiteralPath $registry))
     Write-Host "$passed installer checks passed."
+    $succeeded = $true
 } finally {
     # Undo only our isolated test installation if a check failed midway.
     $uninstall = Join-Path $app 'unins000.exe'
     if (Test-Path -LiteralPath $uninstall) {
-        $p = Start-Process -FilePath $uninstall -WindowStyle Hidden -Wait -PassThru -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART'
-        if ($p.ExitCode -ne 0) { throw "Test uninstall failed; retained $test for inspection." }
+        $cleanupLog = Join-Path $test 'cleanup-uninstall.log'
+        Invoke-BoundedProcess $uninstall @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$cleanupLog`"") 120 "Test cleanup; retained $test for inspection; log $cleanupLog"
     }
     if (Test-Path -LiteralPath $registry) { throw "Test registration remains; retained $test for inspection." }
-    Remove-Generated $test
+    if ($succeeded) { Remove-Generated $test }
+    else { Write-Host "Installer failure logs retained in $test" }
 }

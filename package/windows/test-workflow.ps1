@@ -73,6 +73,40 @@ try {
         Must-Throw { Get-VerifiedDownload '' 'bad.zip' ('0' * 64) }
     }
     Check 'reject incomplete runtime' { Must-Throw { Test-Runtime $BuildRoot } }
+    Check 'bounded child processes report success and failure' {
+        Invoke-BoundedProcess 'powershell.exe' @('-NoProfile','-NonInteractive','-Command','exit 0') 10 'successful child'
+        Must-Throw { Invoke-BoundedProcess 'powershell.exe' @('-NoProfile','-NonInteractive','-Command','exit 7') 10 'failing child' }
+    }
+    Check 'bounded processes wait for a detached descendant' {
+        $descendant = Join-Path $BuildRoot 'descendant.ps1'
+        $launcher = Join-Path $BuildRoot 'launch-descendant.ps1'
+        $sentinel = Join-Path $BuildRoot 'descendant-completed.txt'
+        [IO.File]::WriteAllText($descendant, 'Start-Sleep -Milliseconds 500; Set-Content -LiteralPath "' + $sentinel + '" -Value done')
+        $launch = 'Start-Process powershell.exe -WindowStyle Hidden -ArgumentList @(''-NoProfile'',''-NonInteractive'',''-File'',''{0}'') | Out-Null' -f $descendant.Replace("'","''")
+        [IO.File]::WriteAllText($launcher, $launch)
+        Invoke-BoundedProcess 'powershell.exe' @('-NoProfile','-NonInteractive','-File',$launcher) 10 'detached descendant'
+        if (-not (Test-Path -LiteralPath $sentinel)) { throw 'Returned before the descendant finished.' }
+    }
+    Check 'a stalled descendant is terminated at its deadline' {
+        $childScript = Join-Path $BuildRoot 'stalled-child.ps1'
+        $launcher = Join-Path $BuildRoot 'launch-stalled-child.ps1'
+        $pidFile = Join-Path $BuildRoot 'stalled-child.pid'
+        [IO.File]::WriteAllText($childScript, '$PID | Set-Content -LiteralPath "' + $pidFile + '"; Start-Sleep -Seconds 60')
+        $launch = 'Start-Process powershell.exe -WindowStyle Hidden -ArgumentList @(''-NoProfile'',''-NonInteractive'',''-File'',''{0}'') | Out-Null' -f $childScript.Replace("'","''")
+        [IO.File]::WriteAllText($launcher, $launch)
+        $watch = [Diagnostics.Stopwatch]::StartNew()
+        $timedOut = $false
+        try {
+            Invoke-BoundedProcess 'powershell.exe' @('-NoProfile','-NonInteractive','-File',$launcher) 3 'stalled descendant'
+        } catch [TimeoutException] { $timedOut = $true }
+        if (-not $timedOut -or $watch.Elapsed.TotalSeconds -gt 10) { throw 'Child process deadline failed.' }
+        $childId = [int](Get-Content -LiteralPath $pidFile)
+        $remaining = Get-Process -Id $childId -ErrorAction SilentlyContinue
+        if ($remaining) {
+            Stop-Process -Id $childId -Force
+            throw 'Timed-out child process was left running.'
+        }
+    }
     Check 'cmd quoting accepts spaces and rejects expansions' {
         if ((Cmd-Quote 'D:\Program Files\R') -ne '"D:\Program Files\R"') { throw 'Quoting failed.' }
         Must-Throw { Cmd-Quote '%PATH%' }
